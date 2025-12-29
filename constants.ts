@@ -102,3 +102,4 @@ export const TESTIMONIALS: Testimonial[] = [
 
 export const PRODUCTS = parseCSVData(RAW_DATA);
 export const WHATSAPP_NUMBER = "33768585890";
+export const PAYPAL_RATE_FCFA_PER_EUR = 655;
