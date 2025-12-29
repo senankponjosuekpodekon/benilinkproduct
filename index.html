@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeniLink - Logistique Bénin-France & Produits Authentiques</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fdfdfb; color: #1e293b; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        
+        .card-shadow { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); }
+        .hover-lift { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); }
+        
+        .bg-emerald-600 { background-color: #059669; }
+        .text-emerald-600 { color: #059669; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import React, { useState, useMemo } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+            Search, ShoppingBag, MessageSquare, X, ChevronRight, 
+            Plus, Minus, ShoppingCart, Send, Trash2, Star, Truck, Package, ShieldCheck
+        } from 'https://esm.sh/lucide-react@0.263.1';
+
+        // --- Données du Catalogue ---
+        const WHATSAPP_NUMBER = "33768585890";
+        const RAW_CSV = `Huile de neem pressée à froid,6750
+Huile d’avocat extra vierge,12000
+Beurre de Karité brut,3600
+Huile de ricin pressée à froid,15750
+Huile de palmiste brute,1800
+Huile de coco pressée à froid,5700
+Huile de tournesol extra vierge,6000
+Huile de baobab pressée à froid,9750
+Huile de soja extra vierge,3300
+Poudre de baobab tamisée en vrac,5250
+Huile de nigelle pressée à froid,18000
+Huile d’hibiscus pure,18750
+Huile de carotte pure,13200
+Huile de fenugrec pressée à froid,17700
+Huile d’Akpi pressée à froid,20250
+Poudre de moringa naturelle,10500
+Poudre de neem naturelle,6750
+Huile de moringa pressée à froid,49500
+Huile de sésame pressée à froid,11250`;
+
+        const PRODUCTS = RAW_CSV.split('\n').map((line, idx) => {
+            const [name, priceStr] = line.split(',');
+            const price = parseInt(priceStr);
+            const isLiquid = name.toLowerCase().includes('huile');
+            const category = name.toLowerCase().includes('beurre') ? 'Beurre' : (name.toLowerCase().includes('poudre') ? 'Poudre' : 'Huile');
+            
+            let image = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=800';
+            if (name.toLowerCase().includes('avocat')) image = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800';
+            if (name.toLowerCase().includes('coco')) image = 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&q=80&w=800';
+            if (name.toLowerCase().includes('karité')) image = 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=800';
+            
+            return { id: `p-${idx}`, name, price, category, unit: isLiquid ? 'Litre' : 'Kilo', image };
+        });
+
+        // --- Grille de Tarifs de Livraison ---
+        const SHIPPING_RATES = [
+            { min: 3000, rate: 850, label: "Gros volume" },
+            { min: 1000, rate: 1000, label: "Gros envoi" },
+            { min: 500, rate: 1300, label: "Moyen volume" },
+            { min: 200, rate: 1500, label: "Standard" },
+            { min: 50, rate: 1800, label: "Petit envoi" },
+            { min: 0, rate: 1800, label: "Envoi express" } // Par défaut si < 50kg
+        ];
+
+        const getShippingInfo = (weight) => {
+            return SHIPPING_RATES.find(r => weight >= r.min);
+        };
+
+        const App = () => {
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [activeCategory, setActiveCategory] = useState('Tous');
+            const [search, setSearch] = useState('');
+
+            const filteredProducts = useMemo(() => {
+                return PRODUCTS.filter(p => 
+                    (activeCategory === 'Tous' || p.category === activeCategory) &&
+                    p.name.toLowerCase().includes(search.toLowerCase())
+                );
+            }, [activeCategory, search]);
+
+            // Calculs Panier
+            const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const totalWeight = cart.reduce((acc, item) => acc + item.quantity, 0); // 1L = 1Kg
+            const shippingInfo = getShippingInfo(totalWeight);
+            const totalShipping = totalWeight * (shippingInfo?.rate || 0);
+            const grandTotal = cartTotal + totalShipping;
+
+            const addToCart = (p) => {
+                setCart(prev => {
+                    const existing = prev.find(item => item.id === p.id);
+                    if (existing) return prev.map(item => item.id === p.id ? { ...item, quantity: item.quantity + 1 } : item);
+                    return [...prev, { ...p, quantity: 1 }];
+                });
+                setIsCartOpen(true);
+            };
+
+            const updateQty = (id, delta) => {
+                setCart(prev => prev.map(item => 
+                    item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item
+                ).filter(item => item.quantity > 0));
+            };
+
+            const sendOrder = () => {
+                const text = `Bonjour BeniLink ! Je souhaite passer une commande :\n\n` +
+                    cart.map(i => `- ${i.name} (${i.quantity} ${i.unit}) : ${(i.price * i.quantity).toLocaleString()} FCFA`).join('\n') +
+                    `\n\n--- LIVRAISON BÉNIN-FRANCE ---\n` +
+                    `Poids total : ${totalWeight} kg\n` +
+                    `Tarif : ${shippingInfo.rate} F/kg (${shippingInfo.label})\n` +
+                    `Frais de port : ${totalShipping.toLocaleString()} FCFA\n\n` +
+                    `TOTAL GÉNÉRAL : ${grandTotal.toLocaleString()} FCFA\n\nMerci !`;
+                window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
+            };
+
+            return React.createElement('div', { className: 'min-h-screen pb-12' }, [
+                // Promo Bar
+                React.createElement('div', { className: 'bg-emerald-600 text-white text-[10px] font-bold text-center py-2 px-4 uppercase tracking-[0.2em]' }, 
+                    '🎁 -10% SUR TA PREMIÈRE EXPÉDITION AVEC LE CODE : BÉNIN10'
+                ),
+
+                // Nav
+                React.createElement('nav', { className: 'bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 px-6 py-4' }, 
+                    React.createElement('div', { className: 'max-w-7xl mx-auto flex justify-between items-center' }, [
+                        React.createElement('div', { className: 'flex items-center gap-2' }, [
+                            React.createElement('div', { className: 'w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg' }, React.createElement(Package, { size: 24 })),
+                            React.createElement('div', null, [
+                                React.createElement('span', { className: 'text-2xl font-black text-slate-900 tracking-tighter block leading-none' }, 'BENILINK'),
+                                React.createElement('span', { className: 'text-[9px] font-black text-emerald-600 uppercase tracking-widest' }, 'Bénin • France')
+                            ])
+                        ]),
+                        React.createElement('button', { 
+                            onClick: () => setIsCartOpen(true),
+                            className: 'relative p-3 bg-slate-50 text-slate-700 rounded-2xl'
+                        }, [
+                            React.createElement(ShoppingCart, { size: 24 }),
+                            cart.length > 0 && React.createElement('span', { className: 'absolute -top-1 -right-1 w-6 h-6 bg-emerald-600 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-4 ring-white' }, cart.length)
+                        ])
+                    ])
+                ),
+
+                // Hero
+                React.createElement('header', { className: 'py-16 md:py-24 px-6 text-center' }, 
+                    React.createElement('div', { className: 'max-w-4xl mx-auto animate-fade-in' }, [
+                        React.createElement('h1', { className: 'text-5xl md:text-7xl font-serif text-slate-900 leading-[1.1] mb-6' }, [
+                            'Le lien direct ', React.createElement('span', { className: 'text-emerald-600 italic' }, 'avec le Bénin')
+                        ]),
+                        React.createElement('p', { className: 'text-lg text-slate-500 max-w-2xl mx-auto' }, 'Envoyez vos colis ou recevez des produits authentiques pressés à froid. Logistique fiable et transparente.')
+                    ])
+                ),
+
+                // Catalog
+                React.createElement('main', { className: 'max-w-7xl mx-auto px-4 md:px-6' }, [
+                    // Search & Tabs
+                    React.createElement('div', { className: 'flex flex-col md:flex-row gap-6 justify-between items-center mb-12' }, [
+                        React.createElement('div', { className: 'flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full md:w-auto' }, 
+                            ['Tous', 'Huile', 'Beurre', 'Poudre'].map(cat => 
+                                React.createElement('button', {
+                                    key: cat,
+                                    onClick: () => setActiveCategory(cat),
+                                    className: `px-6 py-3 rounded-2xl text-xs font-bold transition-all ${activeCategory === cat ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`
+                                }, cat)
+                            )
+                        ),
+                        React.createElement('div', { className: 'relative w-full max-w-md' }, [
+                            React.createElement(Search, { className: 'absolute left-5 top-1/2 -translate-y-1/2 text-slate-300', size: 18 }),
+                            React.createElement('input', {
+                                type: 'text',
+                                placeholder: 'Rechercher...',
+                                className: 'w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all',
+                                value: search,
+                                onChange: e => setSearch(e.target.value)
+                            })
+                        ])
+                    ]),
+
+                    // Grid (2 cols mobile)
+                    React.createElement('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-10' }, 
+                        filteredProducts.map(p => 
+                            React.createElement('div', { key: p.id, className: 'group bg-white rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden border border-slate-50 hover:shadow-2xl transition-all duration-500 flex flex-col' }, [
+                                React.createElement('div', { className: 'aspect-square md:h-64 overflow-hidden relative' }, [
+                                    React.createElement('img', { src: p.image, className: 'w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000' }),
+                                    React.createElement('span', { className: 'absolute top-3 left-3 bg-white/95 px-2 py-1 rounded-lg text-[8px] font-black text-emerald-800 uppercase tracking-widest' }, p.category)
+                                ]),
+                                React.createElement('div', { className: 'p-4 md:p-8 flex flex-col flex-grow' }, [
+                                    React.createElement('h3', { className: 'text-sm md:text-lg font-bold text-slate-800 mb-2 md:mb-4 leading-tight min-h-[3rem]' }, p.name),
+                                    React.createElement('div', { className: 'mt-auto pt-3 md:pt-6 border-t border-slate-50 flex justify-between items-center' }, [
+                                        React.createElement('div', null, [
+                                            React.createElement('p', { className: 'text-[8px] md:text-[10px] font-bold text-slate-400 uppercase' }, p.unit),
+                                            React.createElement('p', { className: 'text-sm md:text-xl font-black text-emerald-600' }, `${p.price.toLocaleString()} F`)
+                                        ]),
+                                        React.createElement('button', { 
+                                            onClick: () => addToCart(p),
+                                            className: 'w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all active:scale-90'
+                                        }, React.createElement(Plus, { size: 18 }))
+                                    ])
+                                ])
+                            ])
+                        )
+                    )
+                ]),
+
+                // Cart
+                isCartOpen && React.createElement('div', { className: 'fixed inset-0 z-[70] flex justify-end' }, [
+                    React.createElement('div', { className: 'absolute inset-0 bg-slate-950/80 backdrop-blur-md', onClick: () => setIsCartOpen(false) }),
+                    React.createElement('div', { className: 'relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col p-6 md:p-10 animate-fade-in' }, [
+                        React.createElement('div', { className: 'flex justify-between items-center mb-10' }, [
+                            React.createElement('h3', { className: 'text-2xl font-black' }, 'Panier'),
+                            React.createElement('button', { onClick: () => setIsCartOpen(false) }, React.createElement(X, { size: 28 }))
+                        ]),
+                        React.createElement('div', { className: 'flex-grow overflow-y-auto space-y-6 scrollbar-hide' }, 
+                            cart.length === 0 ? 
+                            React.createElement('div', { className: 'text-center py-20 text-slate-300' }, 'Votre panier est vide') :
+                            cart.map(i => 
+                                React.createElement('div', { key: i.id, className: 'flex gap-4 items-center' }, [
+                                    React.createElement('img', { src: i.image, className: 'w-16 h-16 rounded-xl object-cover' }),
+                                    React.createElement('div', { className: 'flex-grow' }, [
+                                        React.createElement('h4', { className: 'font-bold text-xs' }, i.name),
+                                        React.createElement('p', { className: 'text-emerald-600 font-black text-xs' }, `${i.price.toLocaleString()} FCFA`),
+                                        React.createElement('div', { className: 'flex items-center gap-3 mt-2' }, [
+                                            React.createElement('button', { onClick: () => updateQty(i.id, -1), className: 'p-1 bg-slate-50 rounded-lg' }, React.createElement(Minus, { size: 12 })),
+                                            React.createElement('span', { className: 'text-[10px] font-black' }, i.quantity),
+                                            React.createElement('button', { onClick: () => updateQty(i.id, 1), className: 'p-1 bg-slate-50 rounded-lg' }, React.createElement(Plus, { size: 12 }))
+                                        ])
+                                    ])
+                                ])
+                            )
+                        ),
+                        cart.length > 0 && React.createElement('div', { className: 'pt-8 border-t space-y-4' }, [
+                            React.createElement('div', { className: 'space-y-2' }, [
+                                React.createElement('div', { className: 'flex justify-between text-xs text-slate-500' }, [
+                                    React.createElement('span', null, 'Sous-total produits'),
+                                    React.createElement('span', null, `${cartTotal.toLocaleString()} F`)
+                                ]),
+                                React.createElement('div', { className: 'flex justify-between text-xs text-amber-600 font-bold' }, [
+                                    React.createElement('span', null, `Livraison (${totalWeight}kg @ ${shippingInfo?.rate}F)`),
+                                    React.createElement('span', null, `+ ${totalShipping.toLocaleString()} F`)
+                                ]),
+                                React.createElement('div', { className: 'flex justify-between font-black text-2xl pt-2 border-t border-slate-100' }, [
+                                    React.createElement('span', null, 'Total'),
+                                    React.createElement('span', null, `${grandTotal.toLocaleString()} F`)
+                                ])
+                            ]),
+                            React.createElement('button', { 
+                                onClick: sendOrder,
+                                className: 'w-full bg-emerald-600 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl'
+                            }, [
+                                React.createElement(Send, { size: 20 }), 'Commander sur WhatsApp'
+                            ])
+                        ])
+                    ])
+                ]),
+
+                // Footer
+                React.createElement('footer', { className: 'py-20 px-6 border-t border-slate-50 text-center bg-white' }, 
+                    React.createElement('p', { className: 'text-[10px] font-black uppercase tracking-[0.3em] text-slate-300' }, '© 2024 BENILINK • LOGISTIQUE BÉNIN-FRANCE')
+                ),
+
+                // Floating WhatsApp
+                React.createElement('button', {
+                    onClick: () => window.open(`https://wa.me/${WHATSAPP_NUMBER}`, '_blank'),
+                    className: 'fixed bottom-8 right-8 w-16 h-16 bg-emerald-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-[60] border-4 border-white'
+                }, React.createElement(MessageSquare, { size: 28 }))
+            ]);
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
