@@ -1,9 +1,16 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote } from 'lucide-react';
-import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS } from './constants';
+import { loadStripe } from '@stripe/stripe-js';
+import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS, PAYPAL_RATE_FCFA_PER_EUR } from './constants';
 import { Product, CategoryFilter, ChatMessage, CartItem } from './types';
 import { GoogleGenAI } from '@google/genai';
+
+declare global {
+  interface Window {
+    paypal?: any;
+  }
+}
 
 // Micro-components
 const CategoryTab: React.FC<{
@@ -90,6 +97,14 @@ const App: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [paypalStatus, setPaypalStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const paypalContainerRef = useRef<HTMLDivElement | null>(null);
+  const paypalClientId = process.env.PAYPAL_CLIENT_ID;
+  const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'paypal' | 'stripe'>('whatsapp');
+  const stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+  const appBaseUrl = (process.env.APP_BASE_URL || window.location.origin).trim();
+  const stripeSuccessPath = process.env.STRIPE_SUCCESS_PATH || '/?checkout=success';
+  const stripeCancelPath = process.env.STRIPE_CANCEL_PATH || '/?checkout=cancel';
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter(p => {
@@ -122,6 +137,10 @@ const App: React.FC = () => {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const paypalAmountEUR = useMemo(() => {
+    if (!cartTotal) return 0;
+    return Math.max(1, Math.round((cartTotal / PAYPAL_RATE_FCFA_PER_EUR) * 100) / 100);
+  }, [cartTotal]);
 
   const handleCheckout = () => {
     const message = `Bonjour ! Je souhaite passer une commande :\n\n` +
@@ -134,20 +153,24 @@ const App: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!userInput.trim()) return;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     const userMsg: ChatMessage = { role: 'user', content: userInput };
     setChatMessages(prev => [...prev, userMsg]);
     setUserInput('');
+
+    if (!apiKey) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Clé API manquante. Configurez GEMINI_API_KEY.' }]);
+      return;
+    }
+
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Catalogue : ${JSON.stringify(PRODUCTS.map(p => ({ n: p.name, p: p.price, u: p.unit })))}.
-                  Réponds à : ${userInput}`,
-        config: {
-          systemInstruction: "Tu es un expert en cosmétique naturelle et en huiles précieuses. Réponds en français de façon élégante, professionnelle et concise.",
-        }
+                  Réponds à : ${userInput}. Tu es un expert en cosmétique naturelle et en huiles précieuses. Réponds en français de façon élégante, professionnelle et concise.`,
       });
       setChatMessages(prev => [...prev, { role: 'assistant', content: response.text || "Désolé, je rencontre un petit problème technique." }]);
     } catch (error) {
@@ -156,6 +179,98 @@ const App: React.FC = () => {
       setIsTyping(false);
     }
   };
+
+  const handleStripeCheckout = async () => {
+    if (!stripePublishableKey) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Stripe indisponible: STRIPE_PUBLISHABLE_KEY manquant.' }]);
+      return;
+    }
+    if (cart.length === 0) return;
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(i => ({ name: i.name, priceFCFA: i.price, quantity: i.quantity })),
+          currency: 'EUR',
+          baseUrl: appBaseUrl,
+          successPath: stripeSuccessPath,
+          cancelPath: stripeCancelPath
+        })
+      });
+      const data = await res.json();
+      if (!data.sessionId) throw new Error('sessionId missing');
+      const stripe = await loadStripe(stripePublishableKey);
+      await stripe?.redirectToCheckout({ sessionId: data.sessionId });
+    } catch (e) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Erreur Stripe. Veuillez réessayer.' }]);
+    }
+  };
+
+  const loadPayPalScript = useCallback((clientId: string) => {
+    if (document.querySelector('script[data-paypal-sdk]')) return Promise.resolve();
+    return new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR`;
+      script.async = true;
+      script.dataset.paypalSdk = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('paypal-sdk-load-error'));
+      document.body.appendChild(script);
+    });
+  }, []);
+
+  const renderPayPalButtons = useCallback(() => {
+    if (!window.paypal || !paypalContainerRef.current || cartTotal <= 0) return;
+    paypalContainerRef.current.innerHTML = '';
+
+    window.paypal.Buttons({
+      style: { layout: 'horizontal', height: 45, shape: 'rect', color: 'gold' },
+      createOrder: (_: unknown, actions: any) => {
+        return actions.order.create({
+          intent: 'CAPTURE',
+          purchase_units: [
+            {
+              amount: {
+                currency_code: 'EUR',
+                value: paypalAmountEUR.toFixed(2),
+              },
+              description: 'Commande NaturaPro',
+              items: cart.map(item => ({
+                name: item.name.slice(0, 120),
+                unit_amount: { currency_code: 'EUR', value: Math.max(0.01, (item.price / PAYPAL_RATE_FCFA_PER_EUR)).toFixed(2) },
+                quantity: item.quantity,
+              })),
+            }
+          ]
+        });
+      },
+      onApprove: async (_: unknown, actions: any) => {
+        await actions.order.capture();
+        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Paiement PayPal confirmé. Merci pour votre commande !' }]);
+        setIsCartOpen(false);
+      },
+      onError: () => setPaypalStatus('error')
+    }).render(paypalContainerRef.current);
+
+    setPaypalStatus('ready');
+  }, [cart, cartTotal, paypalAmountEUR]);
+
+  useEffect(() => {
+    if (!isCartOpen || cart.length === 0 || paymentMethod !== 'paypal') return;
+    if (!paypalClientId) {
+      setPaypalStatus('error');
+      return;
+    }
+    if (window.paypal) {
+      renderPayPalButtons();
+      return;
+    }
+    setPaypalStatus('loading');
+    loadPayPalScript(paypalClientId)
+      .then(renderPayPalButtons)
+      .catch(() => setPaypalStatus('error'));
+  }, [isCartOpen, cart.length, paymentMethod, paypalClientId, renderPayPalButtons, loadPayPalScript]);
 
   const copyForSystemeIO = useCallback(() => {
     // Generate full standalone HTML for SIO
@@ -356,13 +471,41 @@ const App: React.FC = () => {
                   <span className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Total de la commande</span>
                   <span className="text-4xl font-black text-emerald-950">{cartTotal.toLocaleString()} <span className="text-sm">FCFA</span></span>
                 </div>
-                <button 
-                  onClick={handleCheckout}
-                  className="w-full bg-emerald-600 text-white py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 hover:bg-emerald-700 shadow-2xl shadow-emerald-200 transition-all active:scale-[0.98] group"
-                >
-                  <Send size={28} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  Commander via WhatsApp
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setPaymentMethod('whatsapp')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'whatsapp' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>WhatsApp</button>
+                  <button onClick={() => setPaymentMethod('paypal')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'paypal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>PayPal</button>
+                  <button onClick={() => setPaymentMethod('stripe')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'stripe' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>Stripe</button>
+                </div>
+                {paymentMethod === 'whatsapp' ? (
+                  <button 
+                    onClick={handleCheckout}
+                    className="w-full bg-emerald-600 text-white py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 hover:bg-emerald-700 shadow-2xl shadow-emerald-200 transition-all active:scale-[0.98] group"
+                  >
+                    <Send size={28} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    Commander via WhatsApp
+                  </button>
+                ) : paymentMethod === 'paypal' ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
+                      <span>Payer avec PayPal</span>
+                      <span className="text-emerald-700 font-black">≈ {paypalAmountEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                    </div>
+                    <div ref={paypalContainerRef} className="min-h-[60px]" />
+                    {paypalStatus === 'loading' && <p className="text-sm text-slate-500">Chargement des boutons PayPal...</p>}
+                    {paypalStatus === 'error' && <p className="text-sm text-red-500">PayPal indisponible. Vérifiez PAYPAL_CLIENT_ID ou réessayez.</p>}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
+                      <span>Payer avec Stripe</span>
+                      <span className="text-emerald-700 font-black">≈ {paypalAmountEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                    </div>
+                    <button onClick={handleStripeCheckout} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-slate-800 transition">
+                      Continuer vers Stripe Checkout
+                    </button>
+                    {!stripePublishableKey && <p className="text-sm text-red-500">Stripe indisponible. Ajoutez STRIPE_PUBLISHABLE_KEY.</p>}
+                  </div>
+                )}
               </div>
             )}
           </div>
