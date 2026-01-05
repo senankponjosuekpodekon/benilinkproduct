@@ -228,9 +228,6 @@ const App: React.FC = () => {
     window.paypal.Buttons({
       style: { layout: 'horizontal', height: 45, shape: 'rect', color: 'gold' },
       createOrder: (_: unknown, actions: any) => {
-        const itemTotal = cart.reduce((sum, item) => {
-          return sum + (item.price / PAYPAL_RATE_FCFA_PER_EUR * item.quantity);
-        }, 0);
         return actions.order.create({
           intent: 'CAPTURE',
           purchase_units: [
@@ -239,7 +236,10 @@ const App: React.FC = () => {
                 currency_code: 'EUR',
                 value: paypalAmountEUR.toFixed(2),
                 breakdown: {
-                  item_total: itemTotal.toFixed(2),
+                  item_total: {
+                    currency_code: 'EUR',
+                    value: paypalAmountEUR.toFixed(2)
+                  }
                 },
               },
               description: 'Commande NaturaPro',
