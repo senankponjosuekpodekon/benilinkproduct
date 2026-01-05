@@ -20,7 +20,55 @@ Huile d’Akpi pressée à froid,20250 FCFA
 Poudre de moringa naturelle,10500 FCFA
 Poudre de neem naturelle,6750 FCFA
 Huile de moringa pressée à froid,49500 FCFA
-Huile de sésame pressée à froid,11250 FCFA`;
+Huile de sésame pressée à froid,11250 FCFA
+Aklui de Sorgho - 600g,2751 FCFA
+Farine de maÏs - 1kg,1493 FCFA
+Farine de telibor (Cosette d'igname) - 1kg,3537 FCFA
+Aklui de Maïs - 600g,2456 FCFA
+Aklui de Mil - 600g,3000 FCFA
+Farine de Agbeli - 600g,2941 FCFA
+Farine de riz (ABLO) - 500g,2941 FCFA
+Farine de Féchouada - 300g,4493 FCFA
+Farine de Côme - 800g,2941 FCFA
+Farine de Mawê Maïs - 600g,2941 FCFA
+Farine de AKASSA - 600g,2941 FCFA
+Farine de ATA GBAZA - 300g,2941 FCFA
+Farine de Adowê - 300g,2941 FCFA
+Farine de Mawê Sorgho - 600g,4493 FCFA
+Tagliatelle au manioc,1801 FCFA
+Piment rouge de table - 500g,2063 FCFA
+Kluiklui – Galette d'arachide croustillante - 300g,1035 FCFA
+Huile rouge - 500ml,1231 FCFA
+Pomme de terre - 1kg,1769 FCFA
+Igname frais - 1kg,3373 FCFA
+Carte-cadeau,9825 FCFA
+Noix d'acajou - 1kg,7074 FCFA
+Ognon - 1kg,2037 FCFA
+Ail - 1 sachet,740 FCFA
+Graine de chia,1801 FCFA
+Piment vert de table - 500g,1349 FCFA
+Infusion verveine menthe - 25 sachets,2692 FCFA
+Lanhouiwin - 100g,2063 FCFA
+Purée de tomate Yon-na - 1Kg,2456 FCFA
+Infusion digestion légère - 20 sachets,2692 FCFA
+Sel de mer fin iodé - La baleine - 125g,1801 FCFA
+Persil séché,1474 FCFA
+Persillade Assaisonnement,1474 FCFA
+Piment noir de Kom - 600g,9039 FCFA
+Piment noir de Kom - 300g,4127 FCFA
+Poudre de cannelle,1801 FCFA
+Poivre blanc bio moulu,1801 FCFA
+Poivre noir bio moulu,1801 FCFA
+Graine d'anis vert,1801 FCFA
+Gingembre en poudre bio,3000 FCFA
+Monodara myristica - Épices,3000 FCFA
+Purée de tomate Yon-na - 500g,2253 FCFA
+Thym séché,1179 FCFA
+Poudre de piment vert CUISTOS - 100g,3747 FCFA
+Poudre de piment CUISTOS - 100g,3000 FCFA
+Tomate en poudre - 125g,4493 FCFA
+Poudre de piment vert - 125g,5247 FCFA
+Poudre de piment rouge - 125g,4493 FCFA`;
 
 // Robust images from Unsplash IDs
 const IMAGE_POOLS = {
@@ -41,6 +89,30 @@ const IMAGE_POOLS = {
     'photo-1515255384510-333066917637',
     'photo-1542618953-274e6459146c',
     'photo-1542618953-b295c2f8149f'
+  ],
+  Farine: [
+    'photo-1509440159596-0249088772ff',
+    'photo-1628840042765-356cda07504e',
+    'photo-1574323347407-f5e1ad6d020b',
+    'photo-1601526714465-bdd38c2b83ff'
+  ],
+  Conserve: [
+    'photo-1599598938194-c9d8c20b1a89',
+    'photo-1619566636858-adf3ef46400b',
+    'photo-1573855619003-97b4799dcd8b'
+  ],
+  Céréale: [
+    'photo-1586201375761-83865001e31c',
+    'photo-1518977676601-b53f82aba655',
+    'photo-1604908176997-125f25cc6f3d',
+    'photo-1612528443702-f6741f70a049'
+  ],
+  Épice: [
+    'photo-1596040008851-e229b5a73c57',
+    'photo-1599909533301-8a6b7c6c3e88',
+    'photo-1506368249639-73a05d6f6488',
+    'photo-1587411768390-609139b54d5e',
+    'photo-1596040008853-f1b5b4b0b1b7'
   ]
 };
 
@@ -50,15 +122,38 @@ export const parseCSVData = (csv: string): Product[] => {
     const [name, priceStr] = line.split(',');
     const price = parseInt(priceStr.replace(/[^0-9]/g, ''));
     
-    let category: 'Huile' | 'Beurre' | 'Poudre' = 'Huile';
-    let unit: 'litre' | 'kilo' = 'litre';
+    let category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice' = 'Huile';
+    let unit: 'litre' | 'kilo' | 'g' | 'ml' | 'sachet' | 'unité' = 'kilo';
 
-    if (name.toLowerCase().includes('poudre')) {
+    const nameLower = name.toLowerCase();
+    
+    // Catégorisation intelligente
+    if (nameLower.includes('farine') || nameLower.includes('aklui') || nameLower.includes('tagliatelle')) {
+      category = 'Farine';
+      unit = 'kilo';
+    } else if (nameLower.includes('kluiklui') || nameLower.includes('conserve') || (nameLower.includes('huile rouge') && nameLower.includes('500ml'))) {
+      category = 'Conserve';
+      unit = 'unité';
+    } else if (nameLower.includes('pomme de terre') || nameLower.includes('igname') || nameLower.includes('carte-cadeau') || nameLower.includes('noix')) {
+      category = 'Céréale';
+      unit = nameLower.includes('kg') ? 'kilo' : 'unité';
+    } else if (nameLower.includes('piment') || nameLower.includes('ognon') || nameLower.includes('ail') || nameLower.includes('graine') || nameLower.includes('infusion') || nameLower.includes('lanhouiwin') || nameLower.includes('purée') || nameLower.includes('sel') || nameLower.includes('persil') || nameLower.includes('poivre') || nameLower.includes('cannelle') || nameLower.includes('gingembre') || nameLower.includes('monodara') || nameLower.includes('thym') || nameLower.includes('tomate en poudre')) {
+      category = 'Épice';
+      if (nameLower.includes('sachet')) unit = 'sachet';
+      else if (nameLower.includes('kg')) unit = 'kilo';
+      else if (nameLower.includes('ml')) unit = 'ml';
+      else if (nameLower.includes('g')) unit = 'g';
+      else unit = 'unité';
+    } else if (nameLower.includes('poudre')) {
       category = 'Poudre';
       unit = 'kilo';
-    } else if (name.toLowerCase().includes('beurre')) {
+    } else if (nameLower.includes('beurre')) {
       category = 'Beurre';
       unit = 'kilo';
+    } else {
+      // Huile par défaut
+      category = 'Huile';
+      unit = 'litre';
     }
 
     const pool = IMAGE_POOLS[category];

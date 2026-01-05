@@ -1,10 +1,11 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote } from 'lucide-react';
+import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote, Truck } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS, PAYPAL_RATE_FCFA_PER_EUR } from './constants';
 import { Product, CategoryFilter, ChatMessage, CartItem } from './types';
 import { GoogleGenAI } from '@google/genai';
+import BeniLink from './BeniLink';
 
 declare global {
   interface Window {
@@ -98,7 +99,30 @@ const App: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [copied, setCopied] = useState(false);
   const [paypalStatus, setPaypalStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [isBeniLinkOpen, setIsBeniLinkOpen] = useState(false);
   const paypalContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Handle BeniLink URL routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      setIsBeniLinkOpen(window.location.hash === '#benilink');
+    };
+    
+    // Check initial hash
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const openBeniLink = () => {
+    window.location.hash = 'benilink';
+  };
+
+  const closeBeniLink = () => {
+    window.location.hash = '';
+  };
   const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'paypal' | 'stripe'>('whatsapp');
   const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -334,6 +358,13 @@ const App: React.FC = () => {
 
           <div className="flex items-center gap-3 sm:gap-6">
             <button 
+              onClick={openBeniLink}
+              className="relative p-3 text-slate-700 hover:bg-amber-50 rounded-2xl transition-all active:scale-95 group"
+              title="BeniLink - Livraison Bénin-France"
+            >
+              <Truck size={26} className="group-hover:text-amber-600 transition-colors" />
+            </button>
+            <button 
               onClick={() => setIsCartOpen(true)}
               className="relative p-3 text-slate-700 hover:bg-slate-50 rounded-2xl transition-all active:scale-95 group"
             >
@@ -376,7 +407,7 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-20 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
           <div className="flex items-center gap-4 overflow-x-auto pb-4 lg:pb-0 scrollbar-hide">
-            {(['Tous', 'Huile', 'Beurre', 'Poudre'] as CategoryFilter[]).map(cat => (
+            {(['Tous', 'Huile', 'Beurre', 'Poudre', 'Farine', 'Conserve', 'Céréale', 'Épice'] as CategoryFilter[]).map(cat => (
               <CategoryTab 
                 key={cat} 
                 label={cat} 
@@ -601,6 +632,19 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* BeniLink Modal */}
+      {isBeniLinkOpen && (
+        <div className="fixed inset-0 z-[90] bg-white overflow-y-auto">
+          <button 
+            onClick={closeBeniLink}
+            className="fixed top-6 right-6 z-[100] p-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all shadow-2xl hover:rotate-90"
+          >
+            <X size={28} />
+          </button>
+          <BeniLink />
         </div>
       )}
 

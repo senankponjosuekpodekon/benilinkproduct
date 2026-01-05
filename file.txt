@@ -1,0 +1,106 @@
+MATIERES PREMIERES	PRIX LITRE/KILOS
+Huile de neem pressée à froid	6750 FCFA
+Huile d’avocat extra vierge	12000 FCFA
+Beurre de Karité brut	3600 FCFA
+Huile de ricin pressée à froid	15750 FCFA
+Huile de palmiste brute	1800 FCFA
+Huile de coco pressée à froid	5700 FCFA
+Huile de tournesol extra vierge	6000 FCFA
+Huile de baobab pressée à froid	9750 FCFA
+Huile de soja extra vierge	3300 FCFA
+Poudre de baobab tamisée en vrac	5250 FCFA
+Huile de nigelle pressée à froid	18000 FCFA
+Huile d’hibiscus pure	18750 FCFA
+Huile de carotte pure	13200 FCFA
+Huile de fenugrec pressée à froid	17700 FCFA
+Huile d’Akpi pressée à froid	20250 FCFA
+Poudre de moringa naturelle	10500 FCFA
+Poudre de neem naturelle	6750 FCFA
+Huile de moringa pressée à froid	49500 FCFA
+Huile de sésame pressée à froid	11250 FCFA
+
+
+
+NOM DE LA FARINE,PRIX
+Aklui de Sorgho - 600g,"4,20€"
+Farine de maÏs - 1kg,"2,28€"
+Farine de telibor (Cosette d'igname) - 1kg,"5,40€"
+Aklui de Maïs - 600g,"3,75€"
+Aklui de Mil - 600g,"4,58€"
+Farine de Agbeli - 600g,"4,49€"
+Farine de riz (ABLO) - 500g,"4,49€"
+Farine de Féchouada - 300g,"6,86€"
+Farine de Côme - 800g,"4,49€"
+Farine de Mawê Maïs - 600g,"4,49€"
+Farine de AKASSA - 600g,"4,49€"
+Farine de ATA GBAZA - 300g,"4,49€"
+Farine de Adowê - 300g,"4,49€"
+Farine de Mawê Sorgho - 600g,"6,86€"
+Tagliatelle au manioc,"2,75€"
+
+
+NOM DE LA CONSERVE	PRIX
+"Piment rouge de table - 500g
+"	3,15€
+"Kluiklui – Galette d’arachide 
+croustillante du Bénin - 300g
+"	1,58€
+"Huile rouge - 500ml
+"	1,88€
+
+
+
+
+CEREALES ET TUBERCULES	PRIX
+Pomme de terre - 1kg	2,70€
+Aklui de Sorgho - 600g	4,20€
+Igname frais - 1kg	5,15€
+Aklui de Maïs - 600g	3,75€
+Aklui de Mil - 600g	4,58€
+Farine de Agbeli - 600g	4,49€
+Farine de riz (ABLO) - 500g	4,49€
+Farine de Féchouada - 300g	6,86€
+Farine de AKASSA - 600g	4,49€
+Farine de ATA GBAZA - 300g	4,49€
+Farine de Adowê - 300g	4,49€
+Farine de Mawê Sorgho - 600g	6,86€
+Carte-cadeau	15€
+Noix d'acajou - 1kg	10,80€
+
+
+
+
+EPICES ET ASSAISONNEMENTS	PRIX
+Ognon - 1kg	3,11€
+Ail - 1 sachet	1,13€
+Graine de chia	2,75€
+Piment vert de table - 500g	2,06€
+Piment rouge de table - 500g	2,06€
+Infusion verveine menthe - 25 sachets	4,11€
+Lanhouiwin - 100g	3,15€
+Purée de tomate Yon-na - 1Kg	3,75€
+Infusion digestion légère - 20 sachets	4,11€
+Sel de mer fin iodé - La baleine - 125g	2,75€
+Persil séché	2,25€
+Persillade Assaisonnement	2,25€
+Piment noir de Kom - 600g	13,80€
+Piment noir de Kom - 300g	6,30€
+Poudre de cannelle	2,75€
+Poivre blanc bio moulu	2,75€
+Poivre noir bio moulu	2,75€
+Graine d'anis vert	2,75€
+Gingembre en poudre bio	4,58€
+Monodara myristica - Épices	4,58€
+Purée de tomate Yon-na - 500g	3,44€
+Thym séché	1,80€
+Poudre de piment vert CUISTOS - 100g	5,72€
+Poudre de piment CUISTOS - 100g	4,58€
+Tomate en poudre - 125g	6,86€
+Poudre de piment vert - 125g	8,01€
+Poudre de piment rouge - 125g	6,86€
+
+
+
+
+
+JE veux qu'on ait ces catégories: Farines, Conserves, Céreales et Tubercules, Epices et Assaisonnements, Matieres premieres, sachant que matieres premieres a déjà été implémenter

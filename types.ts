@@ -4,8 +4,8 @@ export interface Product {
   name: string;
   price: number;
   currency: string;
-  category: 'Huile' | 'Beurre' | 'Poudre';
-  unit: 'litre' | 'kilo';
+  category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice';
+  unit: 'litre' | 'kilo' | 'g' | 'ml' | 'sachet' | 'unité';
   image: string;
   description?: string;
 }
@@ -22,7 +22,7 @@ export interface Testimonial {
   avatar: string;
 }
 
-export type CategoryFilter = 'Tous' | 'Huile' | 'Beurre' | 'Poudre';
+export type CategoryFilter = 'Tous' | 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
