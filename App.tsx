@@ -99,12 +99,12 @@ const App: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [paypalStatus, setPaypalStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const paypalContainerRef = useRef<HTMLDivElement | null>(null);
-  const paypalClientId = process.env.PAYPAL_CLIENT_ID;
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'paypal' | 'stripe'>('whatsapp');
-  const stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
-  const appBaseUrl = (process.env.APP_BASE_URL || window.location.origin).trim();
-  const stripeSuccessPath = process.env.STRIPE_SUCCESS_PATH || '/?checkout=success';
-  const stripeCancelPath = process.env.STRIPE_CANCEL_PATH || '/?checkout=cancel';
+  const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  const appBaseUrl = (import.meta.env.VITE_APP_BASE_URL || window.location.origin).trim();
+  const stripeSuccessPath = import.meta.env.VITE_STRIPE_SUCCESS_PATH || '/?checkout=success';
+  const stripeCancelPath = import.meta.env.VITE_STRIPE_CANCEL_PATH || '/?checkout=cancel';
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter(p => {
@@ -153,13 +153,13 @@ const App: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!userInput.trim()) return;
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     const userMsg: ChatMessage = { role: 'user', content: userInput };
     setChatMessages(prev => [...prev, userMsg]);
     setUserInput('');
 
     if (!apiKey) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Clé API manquante. Configurez GEMINI_API_KEY.' }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Clé API manquante. Configurez VITE_GEMINI_API_KEY dans les variables d\'environnement.' }]);
       return;
     }
 
@@ -182,12 +182,12 @@ const App: React.FC = () => {
 
   const handleStripeCheckout = async () => {
     if (!stripePublishableKey) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Stripe indisponible: STRIPE_PUBLISHABLE_KEY manquant.' }]);
+      alert('Stripe indisponible: VITE_STRIPE_PUBLISHABLE_KEY manquant.');
       return;
     }
     if (cart.length === 0) return;
     try {
-      const res = await fetch('/api/create-checkout-session', {
+      const res = await fetch('/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -203,7 +203,8 @@ const App: React.FC = () => {
       const stripe = await loadStripe(stripePublishableKey);
       await stripe?.redirectToCheckout({ sessionId: data.sessionId });
     } catch (e) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Erreur Stripe. Veuillez réessayer.' }]);
+      console.error('Stripe error:', e);
+      alert('Erreur Stripe. Veuillez réessayer.');
     }
   };
 
