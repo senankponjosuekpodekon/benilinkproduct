@@ -1,12 +1,10 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote, Truck } from 'lucide-react';
+import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote, Truck, Package, Globe, ShieldCheck, CheckCircle, Menu, Mail, Phone } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS, PAYPAL_RATE_FCFA_PER_EUR } from '../constants';
 import { Product, CategoryFilter, ChatMessage, CartItem } from '../types';
-import { GoogleGenAI } from '@google/genai';
-import BeniLink from '../BeniLink';
 
 declare global {
   interface Window {
@@ -22,9 +20,9 @@ const CategoryTab: React.FC<{
 }> = ({ label, isActive, onClick }) => (
   <button
     onClick={onClick}
-    className={`px-6 py-2.5 rounded-2xl transition-all duration-300 text-sm font-semibold transform active:scale-95 whitespace-nowrap ${
+    className={`px-3 sm:px-4 py-2 rounded-xl transition-all duration-300 text-xs sm:text-sm font-bold transform active:scale-95 whitespace-nowrap ${
       isActive 
-        ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 ring-2 ring-emerald-500 ring-offset-2' 
+        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' 
         : 'bg-white text-emerald-900 hover:bg-emerald-50 border border-emerald-100'
     }`}
   >
@@ -33,37 +31,36 @@ const CategoryTab: React.FC<{
 );
 
 const ProductCard: React.FC<{ product: Product; onAddToCart: (p: Product) => void }> = ({ product, onAddToCart }) => (
-  <div className="group bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-500 border border-slate-100 flex flex-col h-full">
-    <div className="relative h-64 overflow-hidden">
+  <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-slate-100 flex flex-col h-full">
+    <div className="relative h-40 sm:h-48 overflow-hidden">
       <img 
         src={product.image} 
         alt={product.name} 
         loading="lazy"
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
       />
-      <div className="absolute top-5 left-5">
-        <span className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-xl text-[10px] font-black text-emerald-800 uppercase tracking-widest shadow-sm">
+      <div className="absolute top-2 left-2">
+        <span className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg text-[8px] font-black text-emerald-800 uppercase tracking-wider shadow-sm">
           {product.category}
         </span>
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
     </div>
-    <div className="p-8 flex flex-col flex-grow">
-      <h3 className="text-xl font-bold text-slate-800 mb-4 leading-tight min-h-[3.5rem] group-hover:text-emerald-700 transition-colors">
+    <div className="p-3 sm:p-4 flex flex-col flex-grow">
+      <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-2 leading-snug line-clamp-2 group-hover:text-emerald-700 transition-colors">
         {product.name}
       </h3>
-      <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+      <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
         <div className="flex flex-col">
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.15em]">Prix au {product.unit}</span>
-          <span className="text-2xl font-black text-emerald-600">
-            {product.price.toLocaleString()} <span className="text-xs font-medium">FCFA</span>
+          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wide">Prix/{product.unit}</span>
+          <span className="text-lg sm:text-xl font-black text-emerald-600">
+            {product.price.toLocaleString()} <span className="text-[10px] font-medium">FCFA</span>
           </span>
         </div>
         <button 
           onClick={() => onAddToCart(product)}
-          className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.25rem] flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-sm active:scale-90"
+          className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm active:scale-90"
         >
-          <Plus size={28} />
+          <Plus size={20} className="sm:w-6 sm:h-6" />
         </button>
       </div>
     </div>
@@ -91,28 +88,169 @@ const TestimonialCard: React.FC<{ testimonial: typeof TESTIMONIALS[0] }> = ({ te
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('Tous');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('benilink_category');
+      return (saved as CategoryFilter) || 'Tous';
+    }
+    return 'Tous';
+  });
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('benilink_search') || '';
+    }
+    return '';
+  });
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('benilink_chat');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copied, setCopied] = useState(false);
   const [paypalStatus, setPaypalStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
-  const [isBeniLinkOpen, setIsBeniLinkOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const paypalContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const openBeniLink = () => {
-    setIsBeniLinkOpen(true);
-  };
+  // Charger le panier depuis localStorage au montage
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('benilink_cart');
+      if (savedCart) {
+        try {
+          return JSON.parse(savedCart);
+        } catch (e) {
+          console.error('Erreur lors du chargement du panier:', e);
+          return [];
+        }
+      }
+    }
+    return [];
+  });
 
-  const closeBeniLink = () => {
-    setIsBeniLinkOpen(false);
-  };
+  // Sauvegarder le panier dans localStorage à chaque modification
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('benilink_cart', JSON.stringify(cart));
+    }
+  }, [cart]);
+
+  // Sauvegarder activeCategory
+  useEffect(() => {
+    localStorage.setItem('benilink_category', activeCategory);
+  }, [activeCategory]);
+
+  // Sauvegarder searchQuery
+  useEffect(() => {
+    localStorage.setItem('benilink_search', searchQuery);
+  }, [searchQuery]);
+
+  // Sauvegarder chatMessages
+  useEffect(() => {
+    localStorage.setItem('benilink_chat', JSON.stringify(chatMessages));
+  }, [chatMessages]);
+
+  // Synchroniser le panier entre les onglets
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'benilink_cart' && e.newValue) {
+        try {
+          const updatedCart = JSON.parse(e.newValue);
+          setCart(updatedCart);
+        } catch (error) {
+          console.error('Erreur de synchronisation du panier:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Formulaire expédition
+  const [formData, setFormData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('benilink_form');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          return {
+            name: '',
+            email: '',
+            phone: '',
+            weight: '',
+            type: 'personnel',
+            message: ''
+          };
+        }
+      }
+    }
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      weight: '',
+      type: 'personnel',
+      message: ''
+    };
+  });
+
+  // Sauvegarder formData
+  useEffect(() => {
+    localStorage.setItem('benilink_form', JSON.stringify(formData));
+  }, [formData]);
+
+  // Données de livraison pour e-commerce
+  const [deliveryData, setDeliveryData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('benilink_delivery');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          return {
+            fullName: '',
+            phone: '',
+            email: '',
+            address: '',
+            city: '',
+            postalCode: '',
+            country: 'France',
+          };
+        }
+      }
+    }
+    return {
+      fullName: '',
+      phone: '',
+      email: '',
+      address: '',
+      city: '',
+      postalCode: '',
+      country: 'France',
+    };
+  });
+
+  // Sauvegarder deliveryData
+  useEffect(() => {
+    localStorage.setItem('benilink_delivery', JSON.stringify(deliveryData));
+  }, [deliveryData]);
+
   const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'paypal' | 'stripe'>('whatsapp');
+  const [isDeliveryFormOpen, setIsDeliveryFormOpen] = useState(true);
   const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
   const appBaseUrl = (import.meta.env.VITE_APP_BASE_URL || window.location.origin).trim();
   const stripeSuccessPath = import.meta.env.VITE_STRIPE_SUCCESS_PATH || '/checkout/success';
@@ -149,44 +287,131 @@ const Home: React.FC = () => {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const paypalAmountEUR = useMemo(() => {
-    if (!cartTotal) return 0;
-    return Math.max(1, Math.round((cartTotal / PAYPAL_RATE_FCFA_PER_EUR) * 100) / 100);
-  }, [cartTotal]);
 
-  const handleCheckout = () => {
-    const message = `Bonjour ! Je souhaite passer une commande :\n\n` +
-      cart.map(item => `- ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString()} FCFA`).join('\n') +
-      `\n\nTotal : ${cartTotal.toLocaleString()} FCFA\n\nMerci de me confirmer la disponibilité !`;
+  // Calculer frais de livraison et taxes
+  const SHIPPING_RATES = {
+    France: 950, // 950 FCFA
+    Benin: 500,  // 500 FCFA
+    International: 2000 // 2000 FCFA
+  };
+
+  const TVA_RATE = 0.20; // 20% pour la France
+
+  const shippingCost = deliveryData.country === 'France' 
+    ? SHIPPING_RATES.France 
+    : deliveryData.country === 'Bénin' 
+    ? SHIPPING_RATES.Benin 
+    : SHIPPING_RATES.International;
+
+  const subtotal = cartTotal;
+  const taxAmount = deliveryData.country === 'France' ? Math.round(subtotal * TVA_RATE) : 0;
+  const totalWithShipping = subtotal + shippingCost + taxAmount;
+
+  const paypalAmountEUR = useMemo(() => {
+    if (!totalWithShipping) return 0;
+    return Math.max(1, Math.round((totalWithShipping / PAYPAL_RATE_FCFA_PER_EUR) * 100) / 100);
+  }, [totalWithShipping]);
+
+  const handleCheckout = async () => {
+    // Vérifier que les infos de livraison sont remplies
+    if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
+      alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
+      return;
+    }
+
+    // ✅ Valider et sauvegarder la commande via l'API sécurisée
+    try {
+      const response = await fetch('/api/validate-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(i => ({ 
+            name: i.name, 
+            quantity: i.quantity 
+            // Prix envoyé mais recalculé côté serveur pour sécurité
+          })),
+          deliveryInfo: deliveryData,
+          paymentMethod: 'whatsapp'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        alert(`❌ Erreur : ${result.error || 'Impossible de valider la commande'}`);
+        return;
+      }
+
+      console.log(`✅ Commande validée : ${result.orderId}`);
+    } catch (error) {
+      console.error('❌ Erreur validation commande:', error);
+      alert('Erreur de connexion. Vérifiez votre connexion internet.');
+      return;
+    }
+
+    // Message WhatsApp (affichage visuel pour le client)
+    const message = `🛍️ NOUVELLE COMMANDE BENILINK\n\n` +
+      `📦 PRODUITS :\n` +
+      cart.map(item => `• ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString()} FCFA`).join('\n') +
+      `\n\n💰 RÉCAPITULATIF :\n` +
+      `• Sous-total : ${subtotal.toLocaleString()} FCFA\n` +
+      `• Livraison (${deliveryData.country}) : ${shippingCost.toLocaleString()} FCFA\n` +
+      (taxAmount > 0 ? `• TVA (20%) : ${taxAmount.toLocaleString()} FCFA\n` : '') +
+      `• TOTAL : ${totalWithShipping.toLocaleString()} FCFA\n\n` +
+      `📍 LIVRAISON :\n` +
+      `• Nom : ${deliveryData.fullName}\n` +
+      `• Téléphone : ${deliveryData.phone}\n` +
+      `• Email : ${deliveryData.email}\n` +
+      `• Adresse : ${deliveryData.address}\n` +
+      `• Ville : ${deliveryData.city}\n` +
+      `• Code postal : ${deliveryData.postalCode}\n` +
+      `• Pays : ${deliveryData.country}\n\n` +
+      `Merci de confirmer la disponibilité ! 🙏`;
     
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
+  const clearCart = () => {
+    setCart([]);
+    localStorage.removeItem('benilink_cart');
+  };
+
   const handleSendMessage = async () => {
     if (!userInput.trim()) return;
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    
     const userMsg: ChatMessage = { role: 'user', content: userInput };
     setChatMessages(prev => [...prev, userMsg]);
     setUserInput('');
-
-    if (!apiKey) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Clé API manquante. Configurez VITE_GEMINI_API_KEY dans les variables d\'environnement.' }]);
-      return;
-    }
-
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Catalogue : ${JSON.stringify(PRODUCTS.map(p => ({ n: p.name, p: p.price, u: p.unit })))}.
-                  Réponds à : ${userInput}. Tu es un expert en cosmétique naturelle et en huiles précieuses. Réponds en français de façon élégante, professionnelle et concise.`,
+      // ✅ Appel sécurisé côté serveur
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userInput,
+          products: PRODUCTS.map(p => ({ name: p.name, price: p.price, unit: p.unit }))
+        })
       });
-      setChatMessages(prev => [...prev, { role: 'assistant', content: response.text || "Désolé, je rencontre un petit problème technique." }]);
+
+      const data = await response.json();
+      
+      if (data.success && data.text) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.text }]);
+      } else {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.text || "Désolé, je rencontre un petit problème technique." 
+        }]);
+      }
     } catch (error) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: "Erreur de connexion. Veuillez réessayer." }]);
+      console.error('Erreur chat:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "Erreur de connexion. Veuillez réessayer dans quelques instants." 
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -197,6 +422,11 @@ const Home: React.FC = () => {
       alert('Stripe indisponible: VITE_STRIPE_PUBLISHABLE_KEY manquant.');
       return;
     }
+    // Vérifier que les infos de livraison sont remplies
+    if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
+      alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
+      return;
+    }
     if (cart.length === 0) return;
     try {
       const res = await fetch('/api', {
@@ -204,6 +434,10 @@ const Home: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cart.map(i => ({ name: i.name, priceFCFA: i.price, quantity: i.quantity })),
+          shippingCost: shippingCost,
+          taxAmount: taxAmount,
+          totalAmount: totalWithShipping,
+          deliveryInfo: deliveryData,
           currency: 'EUR',
           baseUrl: appBaseUrl,
           successPath: stripeSuccessPath,
@@ -219,6 +453,58 @@ const Home: React.FC = () => {
       alert('Erreur Stripe. Veuillez réessayer.');
     }
   };
+
+  // Gestion formulaire expédition
+  const handleShippingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const message = `Bonjour BeniLink,\n\nNom: ${formData.name}\nEmail: ${formData.email}\nTéléphone: ${formData.phone}\nPoids estimé: ${formData.weight} kg\nType: ${formData.type}\n\nMessage:\n${formData.message}`;
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  // Services BeniLink
+  const services = [
+    {
+      icon: Package,
+      title: 'Colis personnels',
+      description: 'Envoyez vivres, vêtements, cadeaux… partout en France.',
+      color: 'emerald'
+    },
+    {
+      icon: Globe,
+      title: 'Produits locaux',
+      description: 'Beurre de karité, huiles (coco, ricin), tapioca, gari, farine de manioc…',
+      color: 'amber'
+    },
+    {
+      icon: Truck,
+      title: 'Approvisionnement pro',
+      description: 'Matières premières pour cosmétique, agroalimentaire, artisanat.',
+      color: 'blue'
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Commandes spécifiques',
+      description: 'Nous recherchons et envoyons ce dont vous avez besoin sur demande.',
+      color: 'violet'
+    }
+  ];
+
+  const processSteps = [
+    { number: '1', title: 'Réservation', description: 'En ligne ou par WhatsApp en quelques minutes.' },
+    { number: '2', title: 'Validation du devis', description: 'Nous vous envoyons un tarif clair et sans surprise.' },
+    { number: '3', title: 'Paiement sécurisé', description: 'Mobile Money, Stripe ou Flutterwave.' },
+    { number: '4', title: 'Expédition', description: 'Envoi hebdomadaire maritime ou aérien.' },
+    { number: '5', title: 'Livraison', description: 'Chez vous ou retrait à Paris en toute simplicité.' }
+  ];
+
+  const pricing = [
+    { name: 'Petit envoi', price: '1800', range: '50 à 199 kg', badge: false },
+    { name: 'Standard', price: '1500', range: '200 à 499 kg', badge: false },
+    { name: 'Moyen volume', price: '1300', range: '500 à 999 kg', badge: true },
+    { name: 'Gros envoi', price: '1000', range: '1 à 2 tonnes', badge: false },
+    { name: 'Gros volume', price: '850', range: '3 tonnes et plus', badge: true }
+  ];
 
   const loadPayPalScript = useCallback((clientId: string) => {
     if (document.querySelector('script[data-paypal-sdk]')) return Promise.resolve();
@@ -265,7 +551,38 @@ const Home: React.FC = () => {
         });
       },
       onApprove: async (_: unknown, actions: any) => {
+        // Vérifier que les infos de livraison sont remplies
+        if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
+          alert('⚠️ Veuillez remplir toutes les informations de livraison avant de valider le paiement.');
+          return;
+        }
         await actions.order.capture();
+        
+        // Sauvegarder la commande
+        try {
+          await fetch('/api/save-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: cart.map(i => ({ 
+                name: i.name, 
+                priceFCFA: i.price, 
+                quantity: i.quantity 
+              })),
+              subtotal: subtotal,
+              shippingCost: shippingCost,
+              taxAmount: taxAmount,
+              totalAmount: totalWithShipping,
+              amountEUR: paypalAmountEUR,
+              deliveryInfo: deliveryData,
+              paymentMethod: 'paypal',
+              timestamp: new Date().toISOString()
+            })
+          });
+        } catch (error) {
+          console.error('Erreur sauvegarde commande:', error);
+        }
+        
         setChatMessages(prev => [...prev, { role: 'assistant', content: 'Paiement PayPal confirmé. Merci pour votre commande !' }]);
         setIsCartOpen(false);
       },
@@ -273,7 +590,7 @@ const Home: React.FC = () => {
     }).render(paypalContainerRef.current);
 
     setPaypalStatus('ready');
-  }, [cart, cartTotal, paypalAmountEUR]);
+  }, [cart, totalWithShipping, paypalAmountEUR, deliveryData]);
 
   useEffect(() => {
     if (!isCartOpen || cart.length === 0 || paymentMethod !== 'paypal') return;
@@ -330,71 +647,183 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8faf7] pb-24 selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white/80 border-b border-emerald-50 sticky top-0 z-40 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200 rotate-3 transition-transform hover:rotate-0">
-              <ShoppingBag size={28} />
-            </div>
-            <div>
-              <span className="text-2xl font-black text-emerald-900 tracking-tighter">NATURA<span className="text-emerald-500">PRO</span></span>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none">Excellence Bio</p>
-            </div>
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 pb-24 selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
+      {/* Header BeniLink */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-emerald-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <button onClick={() => navigate('/')} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center text-white shadow-lg rotate-3 hover:rotate-0 transition-transform">
+                <Package size={28} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight">
+                  <span className="text-amber-500">BENI</span>
+                  <span className="text-emerald-900">LINK</span>
+                </h1>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Bénin • France</p>
+              </div>
+            </button>
 
-          <div className="flex items-center gap-3 sm:gap-6">
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="#boutique" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">Boutique</a>
+              <a href="#expedition" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">Expédition</a>
+              <a href="#tarifs" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">Tarifs</a>
+              <button 
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-3 text-slate-700 hover:bg-slate-50 rounded-2xl transition-all active:scale-95 group"
+              >
+                <ShoppingCart size={24} className="group-hover:text-emerald-600 transition-colors" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-600 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-4 ring-white animate-in zoom-in duration-300">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+              <a href="#contact" className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl active:scale-95">
+                Réserver
+              </a>
+            </nav>
+
             <button 
-              onClick={openBeniLink}
-              className="relative p-3 text-slate-700 hover:bg-amber-50 rounded-2xl transition-all active:scale-95 group"
-              title="BeniLink - Livraison Bénin-France"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
             >
-              <Truck size={26} className="group-hover:text-amber-600 transition-colors" />
-            </button>
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-3 text-slate-700 hover:bg-slate-50 rounded-2xl transition-all active:scale-95 group"
-            >
-              <ShoppingCart size={26} className="group-hover:text-emerald-600 transition-colors" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-600 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-4 ring-white animate-in zoom-in duration-300">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-            <button 
-              onClick={copyForSystemeIO}
-              className="hidden sm:flex items-center gap-2 bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-sm font-black hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95 group"
-            >
-              {copied ? <Check size={20} className="text-emerald-400" /> : <Copy size={20} className="group-hover:rotate-12" />}
-              {copied ? 'Copié !' : 'Export SIO'}
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-t border-emerald-100 shadow-xl">
+            <div className="px-4 py-6 space-y-4">
+              <a href="#boutique" onClick={() => setIsMenuOpen(false)} className="block py-3 text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">Boutique</a>
+              <a href="#expedition" onClick={() => setIsMenuOpen(false)} className="block py-3 text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">Expédition</a>
+              <a href="#tarifs" onClick={() => setIsMenuOpen(false)} className="block py-3 text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">Tarifs</a>
+              <button 
+                onClick={() => { setIsCartOpen(true); setIsMenuOpen(false); }}
+                className="block w-full text-left py-3 text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors"
+              >
+                Panier {cartCount > 0 && `(${cartCount})`}
+              </button>
+              <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block py-3 px-6 bg-emerald-600 text-white rounded-2xl font-black text-sm text-center hover:bg-emerald-700 transition-all">
+                Réserver
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-24 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-50 border border-emerald-100 rounded-full text-emerald-700 text-[10px] font-black uppercase tracking-widest mb-10 animate-bounce">
-            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-sm shadow-emerald-400"></span>
-            Pur à 100% • Pressé à Froid • Bio
+      {/* Hero Section - Dual Activity */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-emerald-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-emerald-200 rounded-full text-emerald-700 text-xs font-black uppercase tracking-widest mb-10 shadow-lg">
+              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-emerald-400"></span>
+              Livraison fiable & Produits authentiques
+            </div>
+            
+            <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 leading-tight">
+              Du <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">Bénin</span> à la <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">France</span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-slate-600 mb-12 leading-relaxed max-w-3xl mx-auto">
+              <strong>Expédiez vos colis</strong> ou <strong>commandez nos produits 100% béninois</strong> : beurre de karité, huiles précieuses, vivres traditionnels. Service complet avec suivi.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a href="#boutique" className="group px-8 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-black text-lg shadow-2xl hover:shadow-emerald-200 transition-all hover:scale-105 active:scale-95 flex items-center gap-3">
+                <ShoppingBag size={24} />
+                Découvrir nos produits
+              </a>
+              <a href="#expedition" className="px-8 py-5 bg-white text-emerald-600 border-2 border-emerald-600 rounded-2xl font-black text-lg hover:bg-emerald-50 transition-all flex items-center gap-3">
+                <Truck size={24} />
+                Expédier un colis
+              </a>
+            </div>
+
+            {/* Stats */}
+            <div className="mt-20 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+              <div className="text-center">
+                <div className="text-4xl font-black text-emerald-600 mb-2">850+</div>
+                <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Colis livrés</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-black text-amber-600 mb-2">70+</div>
+                <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Produits</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-black text-teal-600 mb-2">100%</div>
+                <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Authentique</div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-6xl md:text-9xl font-serif text-emerald-950 mb-10 leading-[0.85] tracking-tight">
-            L'âme de la <br/> <span className="text-emerald-600 italic">Nature</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-slate-500 max-w-3xl mx-auto font-medium leading-relaxed">
-            Sublimez vos formulations avec nos huiles précieuses, beurres onctueux et poudres végétales d'origine certifiée.
-          </p>
+
+          {/* Clarification des 2 services */}
+          <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-3xl border-2 border-emerald-200 hover:border-emerald-400 transition-all group">
+              <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <ShoppingBag size={32} className="text-white" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-3">🛍️ Acheter nos produits</h3>
+              <p className="text-slate-600 leading-relaxed mb-4">
+                Commandez parmi <strong>70+ produits béninois authentiques</strong> : huiles, beurres, épices, vivres. Nous expédions depuis le Bénin vers la France avec suivi complet.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-700">
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-600" />
+                  Livraison France : 950 FCFA
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-600" />
+                  TVA 20% incluse (France)
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-600" />
+                  Paiement sécurisé (PayPal, Stripe, WhatsApp)
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-3xl border-2 border-amber-200 hover:border-amber-400 transition-all group">
+              <div className="w-16 h-16 bg-amber-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Package size={32} className="text-white" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-3">📦 Expédier vos colis</h3>
+              <p className="text-slate-600 leading-relaxed mb-4">
+                Vous avez des colis à envoyer du Bénin vers la France ? Utilisez notre <strong>service d'expédition fiable</strong>. Tarif selon poids, suivi complet, livraison rapide.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-700">
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-amber-600" />
+                  À partir de 850 FCFA/kg
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-amber-600" />
+                  Suivi en temps réel
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-amber-600" />
+                  Livraison sous 7-15 jours
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-gradient-to-b from-emerald-50/70 to-transparent -z-10 pointer-events-none"></div>
       </section>
 
       {/* Product Feed */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-20 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
-          <div className="flex items-center gap-4 overflow-x-auto pb-4 lg:pb-0 scrollbar-hide">
+      <main id="boutique" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
+            🛍️ Nos <span className="text-emerald-600">produits</span> authentiques
+          </h2>
+          <div className="w-24 h-1.5 bg-emerald-500 mx-auto rounded-full mb-8"></div>
+        </div>
+        <div className="mb-12 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
             {(['Tous', 'Huile', 'Beurre', 'Poudre', 'Farine', 'Conserve', 'Céréale', 'Épice'] as CategoryFilter[]).map(cat => (
               <CategoryTab 
                 key={cat} 
@@ -406,38 +835,147 @@ const Home: React.FC = () => {
           </div>
 
           <div className="relative group max-w-md w-full">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={22} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-600 transition-colors" size={20} />
             <input 
               type="text" 
-              placeholder="Rechercher un élixir..."
+              placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-16 pr-8 py-5 bg-white border-2 border-slate-50 rounded-[2rem] focus:ring-8 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all outline-none shadow-sm text-slate-700 font-medium placeholder:text-slate-300"
+              className="w-full pl-12 pr-4 py-3 sm:py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none shadow-sm text-slate-700 font-medium placeholder:text-slate-300 text-sm"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
           {filteredProducts.map(product => (
             <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
           ))}
         </div>
       </main>
 
-      {/* Testimonials Section */}
-      <section className="mt-40 bg-emerald-900 py-32 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-800/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-800/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Ils nous font confiance</h2>
+      {/* Services Section (BeniLink) */}
+      <section id="expedition" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
+              🌿 Nos produits et <span className="text-emerald-600">services</span>
+            </h2>
             <div className="w-24 h-1.5 bg-emerald-500 mx-auto rounded-full"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {TESTIMONIALS.map(t => (
-              <TestimonialCard key={t.id} testimonial={t} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {services.map((service, index) => (
+              <div 
+                key={index} 
+                className="group bg-gradient-to-br from-white to-slate-50 p-8 rounded-[2.5rem] border-2 border-slate-100 hover:border-emerald-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
+              >
+                <div className={`w-16 h-16 bg-gradient-to-br from-${service.color}-500 to-${service.color}-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-transform`}>
+                  <service.icon size={32} className="text-white" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 mb-3">{service.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{service.description}</p>
+              </div>
             ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <a href="#contact" className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 shadow-xl hover:shadow-2xl transition-all active:scale-95">
+              Je réserve mon envoi maintenant
+              <Send size={20} />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Process Section (BeniLink) */}
+      <section id="process" className="py-24 bg-gradient-to-br from-emerald-50 to-teal-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
+              ⚙️ Comment ça <span className="text-emerald-600">marche ?</span>
+            </h2>
+            <div className="w-24 h-1.5 bg-emerald-500 mx-auto rounded-full"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            {processSteps.map((step, index) => (
+              <div 
+                key={index}
+                className="relative bg-white p-8 rounded-[2rem] shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-slate-100"
+              >
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-xl">
+                  {step.number}
+                </div>
+                <div className="mt-8">
+                  <h3 className="text-lg font-black text-emerald-600 mb-3">{step.title}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">{step.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <a href="#contact" className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 shadow-xl hover:shadow-2xl transition-all active:scale-95">
+              Je réserve mon envoi maintenant
+              <Send size={20} />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section (BeniLink) */}
+      <section id="tarifs" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
+              💰 Nos tarifs <span className="text-emerald-600">indicatifs</span>
+            </h2>
+            <div className="w-24 h-1.5 bg-emerald-500 mx-auto rounded-full mb-4"></div>
+            <p className="text-slate-600 max-w-2xl mx-auto">Prix au kilogramme pour un envoi maritime depuis le Bénin vers la France</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {pricing.map((plan, index) => (
+              <div 
+                key={index}
+                className={`relative bg-gradient-to-br from-white to-slate-50 p-8 rounded-[2.5rem] border-2 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 ${
+                  plan.badge ? 'border-emerald-400 shadow-lg' : 'border-slate-200'
+                }`}
+              >
+                {plan.badge && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black uppercase rounded-full shadow-lg">
+                    Populaire
+                  </div>
+                )}
+                <div className="text-center">
+                  <h3 className="text-2xl font-black text-slate-900 mb-4">{plan.name}</h3>
+                  <div className="mb-4">
+                    <span className="text-5xl font-black text-emerald-600">{plan.price}</span>
+                    <span className="text-slate-500 font-bold ml-2">F CFA / Kg</span>
+                  </div>
+                  <p className="text-slate-600 font-bold">{plan.range}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 max-w-2xl mx-auto bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-3xl p-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <CheckCircle size={24} className="text-white" />
+              </div>
+              <div>
+                <h4 className="text-lg font-black text-amber-900 mb-2">💡 Tarif aérien disponible</h4>
+                <p className="text-amber-800">Pour un envoi express (3-5 jours), demandez un devis personnalisé. Tarif à partir de 3000 F CFA/Kg.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <a href="#contact" className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 shadow-xl hover:shadow-2xl transition-all active:scale-95">
+              Réserver mon envoi
+              <Send size={20} />
+            </a>
           </div>
         </div>
       </section>
@@ -467,36 +1005,164 @@ const Home: React.FC = () => {
                   <p className="text-slate-400 mt-3 max-w-[200px]">Parcourez nos pépites naturelles pour le remplir !</p>
                 </div>
               ) : (
-                cart.map(item => (
-                  <div key={item.id} className="flex gap-8 items-center animate-in fade-in slide-in-from-bottom-8">
-                    <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-xl flex-shrink-0 group ring-4 ring-emerald-50">
-                      <img src={item.image} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={item.name} />
-                    </div>
-                    <div className="flex-grow">
-                      <h4 className="text-lg font-bold text-slate-900 leading-tight mb-2">{item.name}</h4>
-                      <p className="text-emerald-600 font-black">{(item.price * item.quantity).toLocaleString()} <span className="text-xs font-medium">FCFA</span></p>
-                      <div className="flex items-center gap-5 mt-4">
-                        <div className="flex items-center bg-slate-100 rounded-2xl p-1.5 ring-1 ring-slate-200/50">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Minus size={16} /></button>
-                          <span className="w-12 text-center text-sm font-black text-slate-800">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Plus size={16} /></button>
+                <>
+                  {cart.map(item => (
+                    <div key={item.id} className="flex gap-8 items-center animate-in fade-in slide-in-from-bottom-8">
+                      <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-xl flex-shrink-0 group ring-4 ring-emerald-50">
+                        <img src={item.image} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={item.name} />
+                      </div>
+                      <div className="flex-grow">
+                        <h4 className="text-lg font-bold text-slate-900 leading-tight mb-2">{item.name}</h4>
+                        <p className="text-emerald-600 font-black">{(item.price * item.quantity).toLocaleString()} <span className="text-xs font-medium">FCFA</span></p>
+                        <div className="flex items-center gap-5 mt-4">
+                          <div className="flex items-center bg-slate-100 rounded-2xl p-1.5 ring-1 ring-slate-200/50">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Minus size={16} /></button>
+                            <span className="w-12 text-center text-sm font-black text-slate-800">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Plus size={16} /></button>
+                          </div>
+                          <button onClick={() => updateQuantity(item.id, -item.quantity)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                            <Trash2 size={20} />
+                          </button>
                         </div>
-                        <button onClick={() => updateQuantity(item.id, -item.quantity)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                          <Trash2 size={20} />
-                        </button>
                       </div>
                     </div>
+                  ))}
+
+                  {/* Formulaire de livraison - Version compacte */}
+                  <div className="bg-emerald-50 rounded-3xl p-6 border-2 border-emerald-200">
+                    <button
+                      onClick={() => setIsDeliveryFormOpen(!isDeliveryFormOpen)}
+                      className="w-full flex items-center justify-between text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Truck size={24} className="text-emerald-600" />
+                        <div>
+                          <h3 className="font-black text-slate-900">Informations de livraison</h3>
+                          {deliveryData.fullName && (
+                            <p className="text-sm text-emerald-600 font-bold mt-1">
+                              ✓ {deliveryData.fullName} - {deliveryData.city || 'Ville à renseigner'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight 
+                        size={24} 
+                        className={`text-emerald-600 transition-transform ${isDeliveryFormOpen ? 'rotate-90' : ''}`}
+                      />
+                    </button>
+
+                    {isDeliveryFormOpen && (
+                      <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Nom complet *"
+                            value={deliveryData.fullName}
+                            onChange={(e) => setDeliveryData({ ...deliveryData, fullName: e.target.value })}
+                            className="px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                            required
+                          />
+                          <input
+                            type="tel"
+                            placeholder="Téléphone *"
+                            value={deliveryData.phone}
+                            onChange={(e) => setDeliveryData({ ...deliveryData, phone: e.target.value })}
+                            className="px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                            required
+                          />
+                        </div>
+                        <input
+                          type="email"
+                          placeholder="Email"
+                          value={deliveryData.email}
+                          onChange={(e) => setDeliveryData({ ...deliveryData, email: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Adresse complète *"
+                          value={deliveryData.address}
+                          onChange={(e) => setDeliveryData({ ...deliveryData, address: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                          required
+                        />
+                        <div className="grid grid-cols-3 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Ville *"
+                            value={deliveryData.city}
+                            onChange={(e) => setDeliveryData({ ...deliveryData, city: e.target.value })}
+                            className="px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                            required
+                          />
+                          <input
+                            type="text"
+                            placeholder="Code postal"
+                            value={deliveryData.postalCode}
+                            onChange={(e) => setDeliveryData({ ...deliveryData, postalCode: e.target.value })}
+                            className="px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                          />
+                          <select
+                            value={deliveryData.country}
+                            onChange={(e) => setDeliveryData({ ...deliveryData, country: e.target.value })}
+                            className="px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                          >
+                            <option value="France">🇫🇷 France</option>
+                            <option value="Bénin">🇧🇯 Bénin</option>
+                            <option value="International">🌍 International</option>
+                          </select>
+                        </div>
+                        <p className="text-xs text-emerald-700 font-bold">* Champs obligatoires</p>
+                        <button
+                          onClick={() => {
+                            setIsDeliveryFormOpen(false);
+                            // Scroll vers le bas du panier
+                            setTimeout(() => {
+                              const cartElement = document.querySelector('.flex-grow.overflow-y-auto');
+                              if (cartElement) {
+                                cartElement.scrollTo({ top: cartElement.scrollHeight, behavior: 'smooth' });
+                              }
+                            }, 100);
+                          }}
+                          className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle size={20} />
+                          Valider les informations
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ))
+                </>
               )}
             </div>
 
             {cart.length > 0 && (
-              <div className="p-10 border-t border-slate-50 bg-slate-50/50 space-y-8">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Total de la commande</span>
-                  <span className="text-4xl font-black text-emerald-950">{cartTotal.toLocaleString()} <span className="text-sm">FCFA</span></span>
+              <div className="p-10 border-t border-slate-50 bg-slate-50/50 space-y-6">
+                {/* Récapitulatif */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 font-bold">Sous-total</span>
+                    <span className="font-black text-slate-900">{subtotal.toLocaleString()} FCFA</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 font-bold">Livraison ({deliveryData.country})</span>
+                    <span className="font-black text-emerald-600">{shippingCost.toLocaleString()} FCFA</span>
+                  </div>
+                  {taxAmount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-600 font-bold">TVA (20%)</span>
+                      <span className="font-black text-slate-900">{taxAmount.toLocaleString()} FCFA</span>
+                    </div>
+                  )}
+                  <div className="pt-3 border-t border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Total à payer</span>
+                      <span className="text-4xl font-black text-emerald-950">{totalWithShipping.toLocaleString()} <span className="text-sm">FCFA</span></span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Méthodes de paiement */}
                 <div className="flex gap-2">
                   <button onClick={() => setPaymentMethod('whatsapp')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'whatsapp' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>WhatsApp</button>
                   <button onClick={() => setPaymentMethod('paypal')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'paypal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>PayPal</button>
@@ -514,7 +1180,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
                       <span>Payer avec PayPal</span>
-                      <span className="text-emerald-700 font-black">≈ {paypalAmountEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                      <span className="text-emerald-700 font-black">≈ {(totalWithShipping / PAYPAL_RATE_FCFA_PER_EUR).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
                     <div ref={paypalContainerRef} className="min-h-[60px]" />
                     {paypalStatus === 'loading' && <p className="text-sm text-slate-500">Chargement des boutons PayPal...</p>}
@@ -524,7 +1190,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
                       <span>Payer avec Stripe</span>
-                      <span className="text-emerald-700 font-black">≈ {paypalAmountEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                      <span className="text-emerald-700 font-black">≈ {(totalWithShipping / PAYPAL_RATE_FCFA_PER_EUR).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
                     <button onClick={handleStripeCheckout} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-slate-800 transition">
                       Continuer vers Stripe Checkout
@@ -623,45 +1289,210 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* BeniLink Modal */}
-      {isBeniLinkOpen && (
-        <div className="fixed inset-0 z-[90] bg-white overflow-y-auto">
-          <button 
-            onClick={closeBeniLink}
-            className="fixed top-6 right-6 z-[100] p-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all shadow-2xl hover:rotate-90"
-          >
-            <X size={28} />
-          </button>
-          <BeniLink />
+      {/* Contact & Réservation (Formulaire unifié) */}
+      <section id="contact" className="py-24 bg-gradient-to-br from-slate-900 via-emerald-900 to-teal-900 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl"></div>
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
+              📦 Réservez votre <span className="text-amber-400">envoi</span>
+            </h2>
+            <p className="text-emerald-100 text-lg">Remplissez le formulaire et nous vous contacterons rapidement sur WhatsApp</p>
+          </div>
+
+          <form onSubmit={handleShippingSubmit} className="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Nom complet *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
+                  placeholder="Votre nom"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
+                  placeholder="votre@email.com"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Téléphone *</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
+                  placeholder="+33 ou +229"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Poids estimé (kg)</label>
+                <input
+                  type="number"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
+                  placeholder="50"
+                />
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Type d'envoi</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
+              >
+                <option value="personnel">Colis personnel</option>
+                <option value="produits">Produits locaux</option>
+                <option value="pro">Approvisionnement professionnel</option>
+                <option value="specifique">Commande spécifique</option>
+              </select>
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Détails de votre demande</label>
+              <textarea
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                rows={4}
+                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium resize-none"
+                placeholder="Décrivez votre besoin (contenu, destination, délai souhaité...)"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-2xl font-black text-lg hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
+            >
+              <Send size={24} />
+              Envoyer sur WhatsApp
+            </button>
+
+            <p className="text-center text-sm text-slate-500 mt-6">
+              En soumettant ce formulaire, vous acceptez d'être contacté par WhatsApp pour finaliser votre réservation.
+            </p>
+          </form>
         </div>
-      )}
+      </section>
 
       {/* Footer */}
-      <footer className="mt-40 border-t border-slate-100 bg-white py-24">
+      <footer className="bg-slate-900 text-white py-16 mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+            {/* Colonne 1 - Marque */}
             <div className="space-y-6">
-              <span className="text-2xl font-black text-emerald-900">NATURAPRO</span>
-              <p className="text-slate-400 text-sm font-medium leading-relaxed">
-                Le meilleur de la nature, sélectionné avec soin et passion pour votre bien-être quotidien.
-              </p>
-            </div>
-            {['Produits', 'Expertise', 'Compte', 'Support'].map(title => (
-              <div key={title} className="space-y-6">
-                <h5 className="font-black text-xs uppercase tracking-[0.25em] text-slate-900">{title}</h5>
-                <ul className="space-y-4 text-slate-400 text-sm font-bold">
-                  <li><a href="#" className="hover:text-emerald-600 transition-colors">Lien Utile</a></li>
-                  <li><a href="#" className="hover:text-emerald-600 transition-colors">Information</a></li>
-                  <li><a href="#" className="hover:text-emerald-600 transition-colors">Contactez-nous</a></li>
-                </ul>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Package size={28} />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-black">
+                    <span className="text-amber-500">BENI</span>
+                    <span className="text-white">LINK</span>
+                  </h1>
+                </div>
               </div>
-            ))}
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Votre partenaire de confiance pour l'expédition de colis et produits authentiques entre le Bénin et la France.
+              </p>
+              {/* Réseaux sociaux */}
+              <div className="flex items-center gap-4">
+                <a href="#" className="w-10 h-10 bg-slate-800 hover:bg-emerald-600 rounded-xl flex items-center justify-center transition-all">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <a href="#" className="w-10 h-10 bg-slate-800 hover:bg-emerald-600 rounded-xl flex items-center justify-center transition-all">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-slate-800 hover:bg-emerald-600 rounded-xl flex items-center justify-center transition-all">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </a>
+              </div>
+            </div>
+
+            {/* Colonne 2 - Navigation */}
+            <div className="space-y-6">
+              <h5 className="font-black text-xs uppercase tracking-wider text-white">Navigation</h5>
+              <ul className="space-y-3 text-slate-400 text-sm">
+                <li><a href="#boutique" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Boutique</a></li>
+                <li><a href="#expedition" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Expédition</a></li>
+                <li><a href="#tarifs" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Tarifs</a></li>
+                <li><a href="#contact" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Contact</a></li>
+              </ul>
+            </div>
+
+            {/* Colonne 3 - Contact */}
+            <div className="space-y-6">
+              <h5 className="font-black text-xs uppercase tracking-wider text-white">Contact</h5>
+              <ul className="space-y-4 text-slate-400 text-sm">
+                <li className="flex items-start gap-3">
+                  <Mail size={18} className="flex-shrink-0 mt-0.5 text-emerald-500" />
+                  <a href="mailto:germaine.elitenetworker@gmail.com" className="hover:text-emerald-400 transition-colors break-all">
+                    germaine.elitenetworker@gmail.com
+                  </a>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Phone size={18} className="flex-shrink-0 text-emerald-500" />
+                  <a href={`tel:+${WHATSAPP_NUMBER}`} className="hover:text-emerald-400 transition-colors">
+                    +33 7 68 58 58 90
+                  </a>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Globe size={18} className="flex-shrink-0 mt-0.5 text-emerald-500" />
+                  <span>Bénin 🇧🇯 → France 🇫🇷</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Colonne 4 - Horaires */}
+            <div className="space-y-6">
+              <h5 className="font-black text-xs uppercase tracking-wider text-white">Horaires</h5>
+              <ul className="space-y-2 text-slate-400 text-sm">
+                <li className="flex justify-between">
+                  <span>Lundi - Vendredi</span>
+                  <span className="text-emerald-400 font-bold">9h - 18h</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Samedi</span>
+                  <span className="text-emerald-400 font-bold">10h - 16h</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Dimanche</span>
+                  <span className="text-slate-500">Fermé</span>
+                </li>
+              </ul>
+              <div className="pt-4">
+                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all">
+                  <MessageSquare size={16} />
+                  Chat WhatsApp
+                </a>
+              </div>
+            </div>
           </div>
-          <div className="mt-20 pt-10 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">© 2024 NaturaPro. Tous droits réservés.</p>
-            <div className="flex gap-8">
-               <a href="#" className="text-slate-300 hover:text-emerald-600 transition-all font-black text-[10px] uppercase tracking-widest">Confidentialité</a>
-               <a href="#" className="text-slate-300 hover:text-emerald-600 transition-all font-black text-[10px] uppercase tracking-widest">Mentions</a>
+
+          {/* Séparateur et copyright */}
+          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-slate-500 text-sm">© 2026 BeniLink. Tous droits réservés.</p>
+            <div className="flex gap-6 text-sm">
+              <a href="/confidentialite" className="text-slate-500 hover:text-emerald-400 transition-colors">Confidentialité</a>
+              <a href="/mentions-legales" className="text-slate-500 hover:text-emerald-400 transition-colors">Mentions légales</a>
+              <a href="/cgv" className="text-slate-500 hover:text-emerald-400 transition-colors">CGV</a>
             </div>
           </div>
         </div>

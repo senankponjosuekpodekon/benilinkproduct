@@ -4,11 +4,21 @@ import { fileURLToPath } from 'node:url';
 import net from 'node:net';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Rate limit pour les routes API (dev server)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requêtes par fenêtre
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api', apiLimiter);
 
 // Vite integration (dev) or static (prod)
 const DEFAULT_PORT = Number(process.env.PORT || 3000);

@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .env
 .env.local
+
+# BENILINK - Données sensibles
+orders/
+*.txt
+orders.json
