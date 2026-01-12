@@ -62,7 +62,7 @@ const TermsOfService: React.FC = () => {
                 notamment en raison de variations naturelles des matières premières.
               </p>
               <ul className="list-disc pl-6 text-slate-600 space-y-2 mt-4">
-                <li>Les prix sont indiqués en Francs CFA (FCFA)</li>
+                <li>Les prix sont indiqués en Euros (€) TTC</li>
                 <li>Produits 100% naturels en provenance du Bénin</li>
                 <li>Qualité contrôlée et certifiée d'origine</li>
                 <li>Pressés à froid pour les huiles, bruts et sans additifs</li>
@@ -73,9 +73,19 @@ const TermsOfService: React.FC = () => {
                 BeniLink propose un service d'expédition de colis entre le Bénin et la France :
               </p>
               <ul className="list-disc pl-6 text-slate-600 space-y-2 mt-4">
-                <li><strong>Transport maritime :</strong> délai de 7 à 14 jours, tarifs de 850 à 1800 FCFA/kg selon le volume</li>
-                <li><strong>Transport aérien :</strong> délai de 3 à 5 jours, tarif à partir de 3000 FCFA/kg (sur devis)</li>
-                <li>Poids minimum : 50 kg pour les envois maritimes</li>
+                <li><strong>Retrait en point relais :</strong> Tence ou Saint-Étienne (gratuit)</li>
+                <li><strong>Livraison Colissimo :</strong> frais calculés selon le poids (voir grille tarifaire)</li>
+                <li><strong>Livraison en Point Relais :</strong> frais calculés selon le poids (voir grille tarifaire)</li>
+                <li><strong>Grille tarifaire (EUR) :</strong>
+                  <ul className="list-circle pl-6 mt-2 space-y-1">
+                    <li>Jusqu'à 0,5 kg : 5€</li>
+                    <li>Jusqu'à 1 kg : 7€</li>
+                    <li>Jusqu'à 2 kg : 9€</li>
+                    <li>Jusqu'à 5 kg : 14€</li>
+                    <li>Jusqu'à 10 kg : 20€</li>
+                    <li>Plus de 10 kg : 30€</li>
+                  </ul>
+                </li>
                 <li>Colis interdits : produits illégaux, dangereux, périssables non autorisés</li>
               </ul>
             </section>
@@ -115,12 +125,12 @@ const TermsOfService: React.FC = () => {
               
               <h3 className="text-xl font-bold text-slate-800 mb-3 mt-6">5.1 Prix</h3>
               <p className="text-slate-600 leading-relaxed">
-                Les prix sont indiqués en Francs CFA (FCFA) et comprennent :
+                Les prix sont indiqués en Euros (€) TTC (Toutes Taxes Comprises) et comprennent :
               </p>
               <ul className="list-disc pl-6 text-slate-600 space-y-2 mt-4">
                 <li>Le prix du produit ou du service</li>
-                <li>Les taxes applicables</li>
-                <li>Les frais d'expédition sont calculés selon le poids et la destination</li>
+                <li>La TVA à 20% (pour les clients en France)</li>
+                <li>Les frais d'expédition sont calculés selon le poids et le mode de livraison choisi</li>
               </ul>
               <p className="text-slate-600 leading-relaxed mt-4">
                 Les prix affichés au moment de la commande sont fermes et définitifs. BeniLink se réserve le droit de modifier 
@@ -156,16 +166,16 @@ const TermsOfService: React.FC = () => {
               
               <h3 className="text-xl font-bold text-slate-800 mb-3 mt-6">6.1 Zones de livraison</h3>
               <ul className="list-disc pl-6 text-slate-600 space-y-2">
-                <li><strong>France métropolitaine :</strong> toutes les adresses</li>
-                <li><strong>Bénin :</strong> Cotonou, Porto-Novo et principales villes</li>
+                <li><strong>Retrait gratuit :</strong> Tence (Haute-Loire) ou Saint-Étienne (Loire)</li>
+                <li><strong>France métropolitaine :</strong> livraison Colissimo ou Point Relais</li>
                 <li><strong>Autres destinations :</strong> sur demande et devis</li>
               </ul>
 
               <h3 className="text-xl font-bold text-slate-800 mb-3 mt-6">6.2 Délais de livraison</h3>
               <ul className="list-disc pl-6 text-slate-600 space-y-2">
-                <li><strong>Produits en stock (France) :</strong> 3 à 5 jours ouvrés</li>
-                <li><strong>Expédition maritime Bénin → France :</strong> 7 à 14 jours</li>
-                <li><strong>Expédition aérienne Bénin → France :</strong> 3 à 5 jours</li>
+                <li><strong>Retrait en point relais :</strong> sous 24-48h après préparation</li>
+                <li><strong>Colissimo :</strong> 2 à 3 jours ouvrés après expédition</li>
+                <li><strong>Point Relais :</strong> 3 à 5 jours ouvrés après expédition</li>
               </ul>
               <p className="text-slate-600 leading-relaxed mt-4">
                 Ces délais sont indicatifs et peuvent varier en fonction des aléas de transport, conditions météorologiques, 

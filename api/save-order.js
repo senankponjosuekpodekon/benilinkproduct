@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const orderId = `BNL-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     const timestamp = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
-    // Formater les données de la commande
+    // Formater les données de la commande (EUR-first)
     const orderText = `
 ═══════════════════════════════════════════════════════════════
 🛍️ NOUVELLE COMMANDE BENILINK - ${orderId}
@@ -35,16 +35,17 @@ export default async function handler(req, res) {
 ${orderData.items.map((item, index) => `
   ${index + 1}. ${item.name}
      - Quantité: ${item.quantity}
-     - Prix unitaire: ${item.priceFCFA.toLocaleString()} FCFA
-     - Sous-total: ${(item.priceFCFA * item.quantity).toLocaleString()} FCFA
+     - Prix unitaire: ${item.priceEUR ? item.priceEUR.toFixed(2) + ' EUR' : (item.priceFCFA?.toLocaleString() + ' FCFA')}
+     - Sous-total: ${item.priceEUR ? (item.priceEUR * item.quantity).toFixed(2) + ' EUR' : ((item.priceFCFA * item.quantity).toLocaleString() + ' FCFA')}
 `).join('')}
 
 💰 RÉCAPITULATIF FINANCIER:
-   • Sous-total produits: ${orderData.subtotal?.toLocaleString() || 'N/A'} FCFA
-   • Frais de livraison: ${orderData.shippingCost?.toLocaleString() || 'N/A'} FCFA
-   • TVA (20%): ${orderData.taxAmount?.toLocaleString() || '0'} FCFA
-   • TOTAL: ${orderData.totalAmount?.toLocaleString() || 'N/A'} FCFA
-   • Montant EUR: ${orderData.amountEUR?.toFixed(2) || 'N/A'} EUR
+   • Sous-total (TTC): ${orderData.amountEUR ? orderData.subtotal?.toFixed(2) + ' EUR' : (orderData.subtotal?.toLocaleString() + ' FCFA')}
+   • Livraison: ${orderData.amountEUR ? (orderData.shippingCost ?? 0).toFixed(2) + ' EUR' : (orderData.shippingCost?.toLocaleString() + ' FCFA')}
+   • TVA incluse (20%): ${orderData.amountEUR ? (orderData.taxAmount ?? 0).toFixed(2) + ' EUR' : (orderData.taxAmount?.toLocaleString() + ' FCFA')}
+   • TOTAL: ${orderData.amountEUR ? orderData.amountEUR.toFixed(2) + ' EUR' : (orderData.totalAmount?.toLocaleString() + ' FCFA')}
+${orderData.totalWeightKg ? `   • Poids total: ${orderData.totalWeightKg} kg` : ''}
+${orderData.deliveryMethod ? `   • Mode livraison: ${orderData.deliveryMethod}` : ''}
 
 📍 INFORMATIONS DE LIVRAISON:
    • Nom complet: ${orderData.deliveryInfo?.fullName || 'N/A'}

@@ -28,14 +28,16 @@ export default async function handler(req, res) {
   const stripe = new Stripe(STRIPE_SECRET_KEY);
 
   try {
-    const { items, currency = 'EUR' } = req.body || {};
+    const { items, currency = 'EUR', shippingCostEUR } = req.body || {};
     
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'No items provided' });
     }
 
     const line_items = items.map((i) => {
-      const unitAmountEUR = Math.max(0.01, i.priceFCFA / FCFA_PER_EUR);
+      const unitAmountEUR = typeof i.priceEUR === 'number'
+        ? Math.max(0.01, i.priceEUR)
+        : Math.max(0.01, i.priceFCFA / FCFA_PER_EUR);
       const unitAmountCents = Math.round(unitAmountEUR * 100);
       return {
         price_data: {
@@ -46,6 +48,17 @@ export default async function handler(req, res) {
         quantity: i.quantity
       };
     });
+
+    if (typeof shippingCostEUR === 'number' && shippingCostEUR > 0) {
+      line_items.push({
+        price_data: {
+          currency,
+          unit_amount: Math.round(Math.max(0.01, shippingCostEUR) * 100),
+          product_data: { name: 'Frais de livraison' }
+        },
+        quantity: 1
+      });
+    }
 
     const baseUrl = req.body?.baseUrl || process.env.APP_BASE_URL || req.headers.origin || 'https://benilinkproduct.vercel.app';
     const successPath = req.body?.successPath || process.env.STRIPE_SUCCESS_PATH || '/?checkout=success';

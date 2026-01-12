@@ -19,6 +19,8 @@ export default async function handler(req, res) {
 
   try {
     const { orderData } = req.body;
+    const eurMode = (typeof orderData?.amountEUR === 'number' && typeof orderData?.totalAmount === 'number'
+      && Math.abs(orderData.amountEUR - orderData.totalAmount) < 0.01) || orderData?.currency === 'EUR';
     const resendApiKey = process.env.RESEND_API_KEY;
 
     if (!resendApiKey) {
@@ -51,7 +53,7 @@ export default async function handler(req, res) {
               
               <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 0; color: #065f46;"><strong>Numéro de commande :</strong> ${orderData.orderId}</p>
-                <p style="margin: 10px 0 0 0; color: #065f46;"><strong>Total :</strong> ${orderData.totalAmount?.toLocaleString()} FCFA (≈ ${orderData.amountEUR?.toFixed(2)} EUR)</p>
+                <p style="margin: 10px 0 0 0; color: #065f46;"><strong>Total :</strong> ${(orderData.amountEUR ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</p>
               </div>
 
               <h3 style="color: #1f2937; margin-top: 30px;">📦 Vos articles</h3>
@@ -59,7 +61,7 @@ export default async function handler(req, res) {
                 ${orderData.items?.map(item => `
                   <li style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
                     <strong>${item.name}</strong><br>
-                    <span style="color: #6b7280;">Quantité: ${item.quantity} • ${(item.priceFCFA * item.quantity).toLocaleString()} FCFA</span>
+                    <span style="color: #6b7280;">Quantité: ${item.quantity} • ${(item.priceEUR ? (item.priceEUR * item.quantity).toFixed(2) + ' EUR' : (item.priceFCFA * item.quantity).toLocaleString() + ' FCFA')}</span>
                   </li>
                 `).join('')}
               </ul>
@@ -110,7 +112,7 @@ export default async function handler(req, res) {
             
             <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
               <h2 style="margin: 0 0 10px 0; color: #065f46;">Commande ${orderData.orderId}</h2>
-              <p style="margin: 5px 0; color: #047857;"><strong>Total:</strong> ${orderData.totalAmount?.toLocaleString()} FCFA (${orderData.amountEUR?.toFixed(2)} EUR)</p>
+              <p style="margin: 5px 0; color: #047857;"><strong>Total:</strong> ${(orderData.amountEUR ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</p>
               <p style="margin: 5px 0; color: #047857;"><strong>Paiement:</strong> ${orderData.paymentMethod?.toUpperCase()}</p>
             </div>
 
@@ -153,30 +155,47 @@ export default async function handler(req, res) {
                   <tr>
                     <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
                     <td style="padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
-                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${item.priceFCFA?.toLocaleString()} F</td>
-                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${(item.priceFCFA * item.quantity).toLocaleString()} F</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${item.priceEUR ? item.priceEUR.toFixed(2) + ' €' : (item.priceFCFA?.toLocaleString() + ' F')}</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${item.priceEUR ? (item.priceEUR * item.quantity).toFixed(2) + ' €' : ((item.priceFCFA * item.quantity).toLocaleString() + ' F')}</td>
                   </tr>
                 `).join('')}
               </tbody>
               <tfoot>
+                ${eurMode ? `
                 <tr>
-                  <td colspan="3" style="padding: 12px; text-align: right;"><strong>Sous-total:</strong></td>
-                  <td style="padding: 12px; text-align: right; font-weight: bold;">${orderData.subtotal?.toLocaleString()} F</td>
+                  <td colspan="3" style="padding: 12px; text-align: right;"><strong>Sous-total (TTC):</strong></td>
+                  <td style="padding: 12px; text-align: right; font-weight: bold;">${(orderData.subtotal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
                 <tr>
                   <td colspan="3" style="padding: 12px; text-align: right;">Livraison:</td>
-                  <td style="padding: 12px; text-align: right;">${orderData.shippingCost?.toLocaleString()} F</td>
+                  <td style="padding: 12px; text-align: right;">${(orderData.shippingCost ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
-                ${orderData.taxAmount > 0 ? `
                 <tr>
-                  <td colspan="3" style="padding: 12px; text-align: right;">TVA (20%):</td>
-                  <td style="padding: 12px; text-align: right;">${orderData.taxAmount?.toLocaleString()} F</td>
+                  <td colspan="3" style="padding: 12px; text-align: right;">TVA incluse (20%):</td>
+                  <td style="padding: 12px; text-align: right;">${(orderData.taxAmount ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
-                ` : ''}
                 <tr style="background: #ecfdf5;">
                   <td colspan="3" style="padding: 12px; text-align: right; font-size: 18px;"><strong>TOTAL:</strong></td>
-                  <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; color: #059669;">${orderData.totalAmount?.toLocaleString()} F</td>
+                  <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; color: #059669;">${(orderData.amountEUR ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
+                ` : `
+                <tr>
+                  <td colspan="3" style="padding: 12px; text-align: right;"><strong>Sous-total:</strong></td>
+                  <td style="padding: 12px; text-align: right; font-weight: bold;">${(orderData.subtotal ?? 0).toLocaleString()} F</td>
+                </tr>
+                <tr>
+                  <td colspan="3" style="padding: 12px; text-align: right;">Livraison:</td>
+                  <td style="padding: 12px; text-align: right;">${(orderData.shippingCost ?? 0).toLocaleString()} F</td>
+                </tr>
+                <tr>
+                  <td colspan="3" style="padding: 12px; text-align: right;">TVA (20%):</td>
+                  <td style="padding: 12px; text-align: right;">${(orderData.taxAmount ?? 0).toLocaleString()} F</td>
+                </tr>
+                <tr style="background: #ecfdf5;">
+                  <td colspan="3" style="padding: 12px; text-align: right; font-size: 18px;"><strong>TOTAL:</strong></td>
+                  <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; color: #059669;">${(orderData.totalAmount ?? 0).toLocaleString()} F (${(orderData.amountEUR ?? 0).toFixed(2)} €)</td>
+                </tr>
+                `}
               </tfoot>
             </table>
 

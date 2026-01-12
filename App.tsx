@@ -7,6 +7,7 @@ import CheckoutCancel from './pages/CheckoutCancel';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import LegalNotice from './pages/LegalNotice';
 import TermsOfService from './pages/TermsOfService';
+import ShippingPolicy from './pages/ShippingPolicy';
 import AdminDashboard from './pages/AdminDashboard';
 
 const App: React.FC = () => {
@@ -19,6 +20,7 @@ const App: React.FC = () => {
         <Route path="/confidentialite" element={<PrivacyPolicy />} />
         <Route path="/mentions-legales" element={<LegalNotice />} />
         <Route path="/cgv" element={<TermsOfService />} />
+        <Route path="/politique-expedition" element={<ShippingPolicy />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

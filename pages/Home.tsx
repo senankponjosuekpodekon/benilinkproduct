@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote, Truck, Package, Globe, ShieldCheck, CheckCircle, Menu, Mail, Phone } from 'lucide-react';
+import { Search, ShoppingBag, MessageSquare, X, ChevronRight, Copy, Check, Plus, Minus, ShoppingCart, Send, Trash2, Star, Quote, Truck, Package, Globe, ShieldCheck, CheckCircle, Menu, Mail, Phone, Ship, Plane, Clock } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
-import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS, PAYPAL_RATE_FCFA_PER_EUR } from '../constants';
+import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS, VAT_RATE } from '../constants';
 import { Product, CategoryFilter, ChatMessage, CartItem } from '../types';
 
 declare global {
@@ -53,7 +53,7 @@ const ProductCard: React.FC<{ product: Product; onAddToCart: (p: Product) => voi
         <div className="flex flex-col">
           <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wide">Prix/{product.unit}</span>
           <span className="text-lg sm:text-xl font-black text-emerald-600">
-            {product.price.toLocaleString()} <span className="text-[10px] font-medium">FCFA</span>
+            {product.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-[10px] font-medium">EUR TTC</span>
           </span>
         </div>
         <button 
@@ -288,29 +288,51 @@ const Home: React.FC = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Calculer frais de livraison et taxes
-  const SHIPPING_RATES = {
-    France: 950, // 950 FCFA
-    Benin: 500,  // 500 FCFA
-    International: 2000 // 2000 FCFA
+  // Weight-based shipping
+  type DeliveryMethod = 'pickup-tence' | 'pickup-stetienne' | 'colissimo' | 'relais';
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('pickup-tence');
+
+  const getUnitWeightKg = (item: CartItem) => {
+    const name = item.name.toLowerCase();
+    // Parse grams if present (e.g., 600g)
+    const gramMatch = name.match(/(\d{2,4})\s*g/);
+    if (item.unit === 'g' && gramMatch) {
+      const g = parseInt(gramMatch[1], 10);
+      return Math.max(0.05, g / 1000);
+    }
+    // Parse ml if present (e.g., 500ml)
+    const mlMatch = name.match(/(\d{2,4})\s*ml/);
+    if (item.unit === 'ml' && mlMatch) {
+      const ml = parseInt(mlMatch[1], 10);
+      return Math.max(0.05, ml / 1000); // approx density 1kg/L
+    }
+    if (item.unit === 'kilo') return 1;
+    if (item.unit === 'litre') return 1;
+    // sachet / unité → default estimate
+    return 0.5;
   };
 
-  const TVA_RATE = 0.20; // 20% pour la France
+  const totalWeightKg = cart.reduce((sum, item) => sum + getUnitWeightKg(item) * item.quantity, 0);
 
-  const shippingCost = deliveryData.country === 'France' 
-    ? SHIPPING_RATES.France 
-    : deliveryData.country === 'Bénin' 
-    ? SHIPPING_RATES.Benin 
-    : SHIPPING_RATES.International;
+  const SHIPPING_TIERS_EUR = [
+    { maxKg: 0.5, price: 5 },
+    { maxKg: 1, price: 7 },
+    { maxKg: 2, price: 9 },
+    { maxKg: 5, price: 14 },
+    { maxKg: 10, price: 20 },
+    { maxKg: Infinity, price: 30 }
+  ];
 
-  const subtotal = cartTotal;
-  const taxAmount = deliveryData.country === 'France' ? Math.round(subtotal * TVA_RATE) : 0;
-  const totalWithShipping = subtotal + shippingCost + taxAmount;
+  const shippingCostEUR = useMemo(() => {
+    if (deliveryMethod === 'pickup-tence' || deliveryMethod === 'pickup-stetienne') return 0;
+    const tier = SHIPPING_TIERS_EUR.find(t => totalWeightKg <= t.maxKg) || SHIPPING_TIERS_EUR[SHIPPING_TIERS_EUR.length - 1];
+    return tier.price;
+  }, [deliveryMethod, totalWeightKg]);
 
-  const paypalAmountEUR = useMemo(() => {
-    if (!totalWithShipping) return 0;
-    return Math.max(1, Math.round((totalWithShipping / PAYPAL_RATE_FCFA_PER_EUR) * 100) / 100);
-  }, [totalWithShipping]);
+  const subtotal = cartTotal; // Already EUR TTC per product
+  // VAT component included in subtotal (for display only)
+  const vatIncluded = Math.round((subtotal * (VAT_RATE / (1 + VAT_RATE))) * 100) / 100;
+  const totalWithShipping = subtotal + shippingCostEUR;
 
   const handleCheckout = async () => {
     // Vérifier que les infos de livraison sont remplies
@@ -331,6 +353,7 @@ const Home: React.FC = () => {
             // Prix envoyé mais recalculé côté serveur pour sécurité
           })),
           deliveryInfo: deliveryData,
+          deliveryMethod: deliveryMethod,
           paymentMethod: 'whatsapp'
         })
       });
@@ -352,12 +375,12 @@ const Home: React.FC = () => {
     // Message WhatsApp (affichage visuel pour le client)
     const message = `🛍️ NOUVELLE COMMANDE BENILINK\n\n` +
       `📦 PRODUITS :\n` +
-      cart.map(item => `• ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString()} FCFA`).join('\n') +
+      cart.map(item => `• ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR`).join('\n') +
       `\n\n💰 RÉCAPITULATIF :\n` +
-      `• Sous-total : ${subtotal.toLocaleString()} FCFA\n` +
-      `• Livraison (${deliveryData.country}) : ${shippingCost.toLocaleString()} FCFA\n` +
-      (taxAmount > 0 ? `• TVA (20%) : ${taxAmount.toLocaleString()} FCFA\n` : '') +
-      `• TOTAL : ${totalWithShipping.toLocaleString()} FCFA\n\n` +
+      `• Sous-total (TTC) : ${subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
+      `• Livraison (${deliveryMethod.replace('-', ' ')}) : ${shippingCostEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
+      `• TVA incluse (20%) : ${vatIncluded.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
+      `• TOTAL : ${totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n\n` +
       `📍 LIVRAISON :\n` +
       `• Nom : ${deliveryData.fullName}\n` +
       `• Téléphone : ${deliveryData.phone}\n` +
@@ -433,11 +456,11 @@ const Home: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart.map(i => ({ name: i.name, priceFCFA: i.price, quantity: i.quantity })),
-          shippingCost: shippingCost,
-          taxAmount: taxAmount,
+          items: cart.map(i => ({ name: i.name, priceEUR: i.price, quantity: i.quantity })),
+          shippingCostEUR,
           totalAmount: totalWithShipping,
           deliveryInfo: deliveryData,
+          deliveryMethod: deliveryMethod,
           currency: 'EUR',
           baseUrl: appBaseUrl,
           successPath: stripeSuccessPath,
@@ -499,11 +522,11 @@ const Home: React.FC = () => {
   ];
 
   const pricing = [
-    { name: 'Petit envoi', price: '1800', range: '50 à 199 kg', badge: false },
-    { name: 'Standard', price: '1500', range: '200 à 499 kg', badge: false },
-    { name: 'Moyen volume', price: '1300', range: '500 à 999 kg', badge: true },
-    { name: 'Gros envoi', price: '1000', range: '1 à 2 tonnes', badge: false },
-    { name: 'Gros volume', price: '850', range: '3 tonnes et plus', badge: true }
+    { name: 'Petit envoi', price: '3',range: '5 à 199 kg', badge: false },
+    { name: 'Standard', price: '2,75', range: '200 à 499 kg', badge: false },
+    { name: 'Moyen volume', price: '2,5', range: '500 à 999 kg', badge: true },
+    { name: 'Gros envoi', price: '2,25', range: '1 à 2 tonnes', badge: false },
+    { name: 'Gros volume', price: '1,75', range: '3 tonnes et plus', badge: true }
   ];
 
   const loadPayPalScript = useCallback((clientId: string) => {
@@ -532,18 +555,22 @@ const Home: React.FC = () => {
             {
               amount: {
                 currency_code: 'EUR',
-                value: paypalAmountEUR.toFixed(2),
+                value: totalWithShipping.toFixed(2),
                 breakdown: {
                   item_total: {
                     currency_code: 'EUR',
-                    value: paypalAmountEUR.toFixed(2)
+                    value: subtotal.toFixed(2)
+                  },
+                  shipping: {
+                    currency_code: 'EUR',
+                    value: shippingCostEUR.toFixed(2)
                   }
                 },
               },
-              description: 'Commande NaturaPro',
+              description: 'Commande BeniLink',
               items: cart.map(item => ({
                 name: item.name.slice(0, 120),
-                unit_amount: { currency_code: 'EUR', value: Math.max(0.01, (item.price / PAYPAL_RATE_FCFA_PER_EUR)).toFixed(2) },
+                unit_amount: { currency_code: 'EUR', value: item.price.toFixed(2) },
                 quantity: item.quantity,
               })),
             }
@@ -566,14 +593,15 @@ const Home: React.FC = () => {
             body: JSON.stringify({
               items: cart.map(i => ({ 
                 name: i.name, 
-                priceFCFA: i.price, 
+                priceEUR: i.price, 
                 quantity: i.quantity 
               })),
               subtotal: subtotal,
-              shippingCost: shippingCost,
-              taxAmount: taxAmount,
+              shippingCost: shippingCostEUR,
+              taxAmount: vatIncluded,
               totalAmount: totalWithShipping,
-              amountEUR: paypalAmountEUR,
+              amountEUR: totalWithShipping,
+              currency: 'EUR',
               deliveryInfo: deliveryData,
               paymentMethod: 'paypal',
               timestamp: new Date().toISOString()
@@ -590,7 +618,7 @@ const Home: React.FC = () => {
     }).render(paypalContainerRef.current);
 
     setPaypalStatus('ready');
-  }, [cart, totalWithShipping, paypalAmountEUR, deliveryData]);
+  }, [cart, subtotal, shippingCostEUR, totalWithShipping, deliveryData]);
 
   useEffect(() => {
     if (!isCartOpen || cart.length === 0 || paymentMethod !== 'paypal') return;
@@ -630,7 +658,7 @@ const Home: React.FC = () => {
                         <span class="text-[10px] font-bold text-emerald-600 uppercase mb-2">${p.category}</span>
                         <h3 class="text-lg font-bold text-slate-800 mb-4">${p.name}</h3>
                         <div class="mt-auto flex justify-between items-center">
-                            <span class="text-xl font-black text-emerald-600">${p.price.toLocaleString()} FCFA</span>
+                            <span class="text-xl font-black text-emerald-600">${p.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € TTC</span>
                             <a href="https://wa.me/${WHATSAPP_NUMBER}?text=Bonjour, je souhaite commander : ${p.name}" class="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all">Commander</a>
                         </div>
                     </div>
@@ -761,6 +789,139 @@ const Home: React.FC = () => {
             </div>
           </div>
 
+          {/* Alerte prochains départs - Design moderne et professionnel */}
+          <div className="mt-20 max-w-5xl mx-auto">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+              {/* Header avec badge animé */}
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-8 py-6 border-b border-emerald-100">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <Clock size={28} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900">Prochains Départs</h3>
+                      <p className="text-sm text-slate-600 font-medium">Bénin → France • Réservez dès maintenant</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-full text-xs font-bold shadow-lg">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    Places disponibles
+                  </div>
+                </div>
+              </div>
+
+              {/* Grille des départs */}
+              <div className="p-8 grid md:grid-cols-2 gap-6">
+                {/* Maritime */}
+                <div className="group bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl p-6 border-2 border-sky-200 hover:border-sky-400 transition-all hover:shadow-xl">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-sky-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Ship size={24} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-black text-slate-900">Transport Maritime</h4>
+                        <p className="text-xs text-slate-600 font-semibold">Économique & Fiable</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-sky-600 text-white rounded-full text-xs font-bold">
+                      Min. 5kg
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-sky-600"></div>
+                      <span className="text-sm text-slate-700"><strong>Prochain départ :</strong> 25 Janvier 2026</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-sky-600"></div>
+                      <span className="text-sm text-slate-700"><strong>Délai :</strong> 30-45 jours</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-sky-600"></div>
+                      <span className="text-sm text-slate-700"><strong>Tarif :</strong> À partir de 3 EUR / kg</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-sky-200">
+                    <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg">
+                      <Clock size={14} />
+                      <span className="font-bold">Réservation avant le 20 janvier</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Aérien */}
+                <div className="group bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all hover:shadow-xl">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Plane size={24} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-black text-slate-900">Transport Aérien</h4>
+                        <p className="text-xs text-slate-600 font-semibold">Rapide & Sécurisé</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-purple-600 text-white rounded-full text-xs font-bold">
+                      Min. 10kg
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-600"></div>
+                      <span className="text-sm text-slate-700"><strong>Prochain vol :</strong> 15 Janvier 2026</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-600"></div>
+                      <span className="text-sm text-slate-700"><strong>Délai :</strong> 5-7 jours</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-600"></div>
+                      <span className="text-sm text-slate-700"><strong>Tarif :</strong> À partir de 7,75 EUR / kg</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-purple-200">
+                    <div className="flex items-center gap-2 text-xs text-rose-700 bg-rose-50 px-3 py-2 rounded-lg">
+                      <ShieldCheck size={14} />
+                      <span className="font-bold">Places limitées - Réservez vite</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Footer */}
+              <div className="bg-slate-50 px-8 py-6 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-sm text-slate-600 text-center sm:text-left">
+                    <strong className="text-slate-900">Besoin d'aide ?</strong> Notre équipe vous accompagne dans votre réservation
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <a 
+                      href="https://wa.me/33768585890?text=Bonjour, je souhaite réserver pour le prochain départ"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+                    >
+                      <MessageSquare size={18} />
+                      Réserver sur WhatsApp
+                    </a>
+                    <button
+                      onClick={() => navigate('/politique-expedition')}
+                      className="px-6 py-3 bg-white text-slate-700 border-2 border-slate-200 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all active:scale-95"
+                    >
+                      En savoir plus
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Clarification des 2 services */}
           <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-3xl border-2 border-emerald-200 hover:border-emerald-400 transition-all group">
@@ -774,11 +935,11 @@ const Home: React.FC = () => {
               <ul className="space-y-2 text-sm text-slate-700">
                 <li className="flex items-center gap-2">
                   <CheckCircle size={16} className="text-emerald-600" />
-                  Livraison France : 950 FCFA
+                  Livraison en France selon le poids
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle size={16} className="text-emerald-600" />
-                  TVA 20% incluse (France)
+                  TVA 20% incluse
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle size={16} className="text-emerald-600" />
@@ -798,7 +959,7 @@ const Home: React.FC = () => {
               <ul className="space-y-2 text-sm text-slate-700">
                 <li className="flex items-center gap-2">
                   <CheckCircle size={16} className="text-amber-600" />
-                  À partir de 850 FCFA/kg
+                  À partir de 3 € / kg
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle size={16} className="text-amber-600" />
@@ -951,7 +1112,7 @@ const Home: React.FC = () => {
                   <h3 className="text-2xl font-black text-slate-900 mb-4">{plan.name}</h3>
                   <div className="mb-4">
                     <span className="text-5xl font-black text-emerald-600">{plan.price}</span>
-                    <span className="text-slate-500 font-bold ml-2">F CFA / Kg</span>
+                    <span className="text-slate-500 font-bold ml-2">EUR / Kg</span>
                   </div>
                   <p className="text-slate-600 font-bold">{plan.range}</p>
                 </div>
@@ -966,7 +1127,7 @@ const Home: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-lg font-black text-amber-900 mb-2">💡 Tarif aérien disponible</h4>
-                <p className="text-amber-800">Pour un envoi express (3-5 jours), demandez un devis personnalisé. Tarif à partir de 3000 F CFA/Kg.</p>
+                <p className="text-amber-800">Pour un envoi express (3-5 jours), demandez un devis personnalisé. Tarif à partir de 7,75 EUR / Kg.</p>
               </div>
             </div>
           </div>
@@ -1013,7 +1174,7 @@ const Home: React.FC = () => {
                       </div>
                       <div className="flex-grow">
                         <h4 className="text-lg font-bold text-slate-900 leading-tight mb-2">{item.name}</h4>
-                        <p className="text-emerald-600 font-black">{(item.price * item.quantity).toLocaleString()} <span className="text-xs font-medium">FCFA</span></p>
+                        <p className="text-emerald-600 font-black">{(item.price * item.quantity).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-xs font-medium">EUR</span></p>
                         <div className="flex items-center gap-5 mt-4">
                           <div className="flex items-center bg-slate-100 rounded-2xl p-1.5 ring-1 ring-slate-200/50">
                             <button onClick={() => updateQuantity(item.id, -1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Minus size={16} /></button>
@@ -1050,6 +1211,23 @@ const Home: React.FC = () => {
                         className={`text-emerald-600 transition-transform ${isDeliveryFormOpen ? 'rotate-90' : ''}`}
                       />
                     </button>
+
+                    {/* Mode de livraison / retrait */}
+                    <div className="mt-4 grid grid-cols-1 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider">Mode de livraison</label>
+                        <select
+                          value={deliveryMethod}
+                          onChange={(e) => setDeliveryMethod(e.target.value as any)}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-emerald-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-sm"
+                        >
+                          <option value="pickup-tence">Retrait à Tence (gratuit)</option>
+                          <option value="pickup-stetienne">Retrait à Saint-Étienne (gratuit)</option>
+                          <option value="colissimo">Colissimo (à domicile)</option>
+                          <option value="relais">Point relais (de votre choix)</option>
+                        </select>
+                      </div>
+                    </div>
 
                     {isDeliveryFormOpen && (
                       <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-4">
@@ -1141,23 +1319,25 @@ const Home: React.FC = () => {
                 {/* Récapitulatif */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600 font-bold">Sous-total</span>
-                    <span className="font-black text-slate-900">{subtotal.toLocaleString()} FCFA</span>
+                    <span className="text-slate-600 font-bold">Sous-total (TTC)</span>
+                    <span className="font-black text-slate-900">{subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600 font-bold">Livraison ({deliveryData.country})</span>
-                    <span className="font-black text-emerald-600">{shippingCost.toLocaleString()} FCFA</span>
+                    <span className="text-slate-600 font-bold">Poids total</span>
+                    <span className="font-black text-slate-900">{totalWeightKg.toFixed(2)} kg</span>
                   </div>
-                  {taxAmount > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 font-bold">TVA (20%)</span>
-                      <span className="font-black text-slate-900">{taxAmount.toLocaleString()} FCFA</span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 font-bold">Livraison ({deliveryMethod.replace('-', ' ')})</span>
+                    <span className="font-black text-emerald-600">{shippingCostEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>TVA incluse (20%)</span>
+                    <span>{vatIncluded.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                  </div>
                   <div className="pt-3 border-t border-slate-200">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Total à payer</span>
-                      <span className="text-4xl font-black text-emerald-950">{totalWithShipping.toLocaleString()} <span className="text-sm">FCFA</span></span>
+                      <span className="text-4xl font-black text-emerald-950">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-sm">EUR</span></span>
                     </div>
                   </div>
                 </div>
@@ -1180,7 +1360,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
                       <span>Payer avec PayPal</span>
-                      <span className="text-emerald-700 font-black">≈ {(totalWithShipping / PAYPAL_RATE_FCFA_PER_EUR).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                      <span className="text-emerald-700 font-black">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
                     <div ref={paypalContainerRef} className="min-h-[60px]" />
                     {paypalStatus === 'loading' && <p className="text-sm text-slate-500">Chargement des boutons PayPal...</p>}
@@ -1190,7 +1370,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
                       <span>Payer avec Stripe</span>
-                      <span className="text-emerald-700 font-black">≈ {(totalWithShipping / PAYPAL_RATE_FCFA_PER_EUR).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                      <span className="text-emerald-700 font-black">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
                     <button onClick={handleStripeCheckout} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-slate-800 transition">
                       Continuer vers Stripe Checkout
@@ -1433,6 +1613,7 @@ const Home: React.FC = () => {
                 <li><a href="#boutique" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Boutique</a></li>
                 <li><a href="#expedition" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Expédition</a></li>
                 <li><a href="#tarifs" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Tarifs</a></li>
+                <li><a href="/politique-expedition" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Politique d'envoi</a></li>
                 <li><a href="#contact" className="hover:text-emerald-400 transition-colors flex items-center gap-2"><ChevronRight size={16} />Contact</a></li>
               </ul>
             </div>

@@ -6,15 +6,24 @@ interface OrderItem {
   name: string;
   quantity: number;
   priceFCFA?: number;
+  priceEUR?: number;
   totalFCFA?: number;
+  totalEUR?: number;
 }
 
 interface Order {
   orderId?: string;
   order_id?: string;
+  currency?: string;
   totalAmount?: number;
   total_fcfa?: number;
   amountEUR?: number;
+  total_eur?: number;
+  subtotal?: number;
+  shippingCost?: number;
+  taxAmount?: number;
+  totalWeightKg?: number;
+  deliveryMethod?: string;
   created_at?: string;
   timestamp?: string;
   paymentMethod?: string;
@@ -77,7 +86,25 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const totalRevenue = useMemo(() => {
-    return orders.reduce((sum, order) => sum + (order.totalAmount || order.total_fcfa || 0), 0);
+    return orders.reduce((sum, order) => {
+      // Prefer EUR if available and close to totalAmount (EUR-first orders)
+      const eurAmount = order.amountEUR || order.total_eur;
+      const fcfaAmount = order.totalAmount || order.total_fcfa;
+      if (eurAmount && (!fcfaAmount || Math.abs(eurAmount - fcfaAmount) < 10)) {
+        return sum + eurAmount;
+      }
+      return sum + (fcfaAmount || 0);
+    }, 0);
+  }, [orders]);
+
+  const isEURMode = useMemo(() => {
+    // Detect if most orders are EUR-first
+    const eurOrders = orders.filter(o => {
+      const eurAmount = o.amountEUR || o.total_eur;
+      const fcfaAmount = o.totalAmount || o.total_fcfa;
+      return eurAmount && (!fcfaAmount || Math.abs(eurAmount - fcfaAmount) < 10);
+    });
+    return eurOrders.length > orders.length / 2;
   }, [orders]);
 
   const totalOrders = orders.length;
@@ -156,13 +183,21 @@ const AdminDashboard: React.FC = () => {
                   <p className="text-3xl font-black text-emerald-900">{totalOrders}</p>
                 </div>
                 <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100">
-                  <p className="text-sm text-amber-700 font-semibold">Chiffre d'affaires (FCFA)</p>
-                  <p className="text-3xl font-black text-amber-900">{totalRevenue.toLocaleString()} F</p>
+                  <p className="text-sm text-amber-700 font-semibold">Chiffre d'affaires</p>
+                  <p className="text-3xl font-black text-amber-900">
+                    {isEURMode 
+                      ? `${totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` 
+                      : `${totalRevenue.toLocaleString()} F`}
+                  </p>
                 </div>
                 <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
                   <p className="text-sm text-slate-600 font-semibold">Moyenne panier</p>
                   <p className="text-3xl font-black text-slate-900">
-                    {totalOrders > 0 ? Math.round(totalRevenue / totalOrders).toLocaleString() : '0'} F
+                    {totalOrders > 0 
+                      ? isEURMode 
+                        ? `${(totalRevenue / totalOrders).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
+                        : `${Math.round(totalRevenue / totalOrders).toLocaleString()} F`
+                      : '0'}
                   </p>
                 </div>
               </div>
@@ -183,7 +218,10 @@ const AdminDashboard: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {orders.map((order) => {
                       const id = order.orderId || order.order_id || 'N/A';
-                      const total = order.totalAmount || order.total_fcfa || 0;
+                      const eurAmount = order.amountEUR || order.total_eur;
+                      const fcfaAmount = order.totalAmount || order.total_fcfa;
+                      const isEurOrder = eurAmount && (!fcfaAmount || Math.abs(eurAmount - fcfaAmount) < 10);
+                      const total = isEurOrder ? eurAmount : fcfaAmount || 0;
                       const created = order.timestamp || order.created_at;
                       const payment = order.paymentMethod || order.payment_method || '—';
                       return (
@@ -194,8 +232,22 @@ const AdminDashboard: React.FC = () => {
                             <div className="text-xs text-slate-500">{order.deliveryInfo?.phone}</div>
                           </td>
                           <td className="px-4 py-3 text-slate-700">{order.deliveryInfo?.country || '—'}</td>
-                          <td className="px-4 py-3 font-bold text-emerald-700">{total.toLocaleString()} F</td>
-                          <td className="px-4 py-3 text-slate-700 capitalize">{payment}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-bold text-emerald-700">
+                              {isEurOrder 
+                                ? `${total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
+                                : `${total.toLocaleString()} F`}
+                            </div>
+                            {order.totalWeightKg && (
+                              <div className="text-xs text-slate-500">{order.totalWeightKg} kg</div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-slate-700 capitalize">{payment}</div>
+                            {order.deliveryMethod && (
+                              <div className="text-xs text-slate-500">{order.deliveryMethod}</div>
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-slate-700">{created ? new Date(created).toLocaleString('fr-FR') : '—'}</td>
                           <td className="px-4 py-3 text-slate-700">
                             <div className="flex flex-wrap gap-2">

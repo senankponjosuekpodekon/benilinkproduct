@@ -1,6 +1,11 @@
 
 import { Product, Testimonial } from './types';
 
+// Pricing configuration
+export const FCFA_PER_EUR = 655;
+export const MARKUP_FACTOR = 3.0; // Markup to achieve 2€ from 1.5€ current price
+export const VAT_RATE = 0.20; // 20%
+
 export const RAW_DATA = `MATIERES PREMIERES,PRIX LITRE/KILOS
 Huile de neem pressée à froid,6750 FCFA
 Huile d’avocat extra vierge,12000 FCFA
@@ -120,7 +125,7 @@ export const parseCSVData = (csv: string): Product[] => {
   const lines = csv.split('\n').slice(1);
   return lines.map((line, index) => {
     const [name, priceStr] = line.split(',');
-    const price = parseInt(priceStr.replace(/[^0-9]/g, ''));
+    const basePriceFCFA = parseInt(priceStr.replace(/[^0-9]/g, ''));
     
     let category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice' = 'Huile';
     let unit: 'litre' | 'kilo' | 'g' | 'ml' | 'sachet' | 'unité' = 'kilo';
@@ -159,11 +164,16 @@ export const parseCSVData = (csv: string): Product[] => {
     const pool = IMAGE_POOLS[category];
     const imageId = pool[index % pool.length];
 
+    // Compute EUR price with double 50% markup and VAT included
+    const priceFCFAWithMarkup = Math.round(basePriceFCFA * MARKUP_FACTOR);
+    const priceEURHT = priceFCFAWithMarkup / FCFA_PER_EUR;
+    const priceEURTTC = Math.round(priceEURHT * (1 + VAT_RATE) * 100) / 100; // 2 decimals
+
     return {
       id: `prod-${index}`,
       name,
-      price,
-      currency: 'FCFA',
+      price: priceEURTTC,
+      currency: 'EUR',
       category,
       unit,
       image: `https://images.unsplash.com/${imageId}?auto=format&fit=crop&q=80&w=800&h=600`,
@@ -197,4 +207,4 @@ export const TESTIMONIALS: Testimonial[] = [
 
 export const PRODUCTS = parseCSVData(RAW_DATA);
 export const WHATSAPP_NUMBER = "33768585890";
-export const PAYPAL_RATE_FCFA_PER_EUR = 655;
+export const PAYPAL_RATE_FCFA_PER_EUR = FCFA_PER_EUR;
