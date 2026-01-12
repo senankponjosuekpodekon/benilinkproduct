@@ -487,13 +487,17 @@ const Home: React.FC = () => {
           cancelPath: stripeCancelPath
         })
       });
-      const data = await res.json();
-      if (!data.sessionId) throw new Error('sessionId missing');
+      let data: any = null;
+      try { data = await res.json(); } catch (_) { /* no body */ }
+      if (!res.ok || !data || !data.sessionId) {
+        const msg = data?.error || data?.details || `Échec API Stripe (${res.status})`;
+        throw new Error(msg);
+      }
       const stripe = await loadStripe(stripePublishableKey);
       await stripe?.redirectToCheckout({ sessionId: data.sessionId });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Stripe error:', e);
-      alert('Erreur Stripe. Veuillez réessayer.');
+      alert(`Erreur Stripe: ${e?.message || 'Veuillez réessayer.'}`);
     }
   };
 

@@ -77,6 +77,7 @@ export default async function handler(req, res) {
     res.status(200).json({ sessionId: session.id });
   } catch (err) {
     console.error('Stripe error:', err);
-    res.status(500).json({ error: 'Stripe checkout failed' });
+    const message = err && typeof err === 'object' && 'message' in err ? err.message : String(err);
+    res.status(500).json({ error: 'Stripe checkout failed', details: message });
   }
 }
