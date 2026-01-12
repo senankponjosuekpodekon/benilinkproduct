@@ -1146,7 +1146,7 @@ const Home: React.FC = () => {
         <div className="fixed inset-0 z-[70] flex justify-end">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity" onClick={() => setIsCartOpen(false)}></div>
           <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
-            <div className="p-10 border-b border-slate-50 flex items-center justify-between">
+            <div className="p-6 md:p-10 border-b border-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Votre Panier</h3>
                 <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">{cartCount} article{cartCount > 1 ? 's' : ''}</p>
@@ -1156,7 +1156,7 @@ const Home: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-10 space-y-10">
+            <div className="flex-grow overflow-y-auto p-4 md:p-10 space-y-6 md:space-y-10">
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center">
                   <div className="w-32 h-32 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mb-8 border border-slate-100">
@@ -1168,8 +1168,8 @@ const Home: React.FC = () => {
               ) : (
                 <>
                   {cart.map(item => (
-                    <div key={item.id} className="flex gap-8 items-center animate-in fade-in slide-in-from-bottom-8">
-                      <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-xl flex-shrink-0 group ring-4 ring-emerald-50">
+                    <div key={item.id} className="flex gap-4 md:gap-8 items-center animate-in fade-in slide-in-from-bottom-8">
+                      <div className="w-20 h-20 md:w-28 md:h-28 rounded-3xl overflow-hidden shadow-xl flex-shrink-0 group ring-4 ring-emerald-50">
                         <img src={item.image} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={item.name} />
                       </div>
                       <div className="flex-grow">
@@ -1190,7 +1190,7 @@ const Home: React.FC = () => {
                   ))}
 
                   {/* Formulaire de livraison - Version compacte */}
-                  <div className="bg-emerald-50 rounded-3xl p-6 border-2 border-emerald-200">
+                  <div className="bg-emerald-50 rounded-3xl p-4 md:p-6 border-2 border-emerald-200">
                     <button
                       onClick={() => setIsDeliveryFormOpen(!isDeliveryFormOpen)}
                       className="w-full flex items-center justify-between text-left group"
@@ -1231,7 +1231,7 @@ const Home: React.FC = () => {
 
                     {isDeliveryFormOpen && (
                       <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-4">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <input
                             type="text"
                             placeholder="Nom complet *"
@@ -1315,7 +1315,7 @@ const Home: React.FC = () => {
             </div>
 
             {cart.length > 0 && (
-              <div className="p-10 border-t border-slate-50 bg-slate-50/50 space-y-6">
+              <div className="p-6 md:p-8 border-t border-slate-50 bg-slate-50/50 space-y-5 md:space-y-6">
                 {/* Récapitulatif */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
@@ -1351,9 +1351,9 @@ const Home: React.FC = () => {
                 {paymentMethod === 'whatsapp' ? (
                   <button 
                     onClick={handleCheckout}
-                    className="w-full bg-emerald-600 text-white py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 hover:bg-emerald-700 shadow-2xl shadow-emerald-200 transition-all active:scale-[0.98] group"
+                    className="w-full bg-emerald-600 text-white py-3 md:py-4 rounded-[2rem] font-black text-lg md:text-xl flex items-center justify-center gap-3 md:gap-4 hover:bg-emerald-700 shadow-2xl shadow-emerald-200 transition-all active:scale-[0.98] group"
                   >
-                    <Send size={28} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    <Send size={20} md:size={25} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     Commander via WhatsApp
                   </button>
                 ) : paymentMethod === 'paypal' ? (
@@ -1372,7 +1372,7 @@ const Home: React.FC = () => {
                       <span>Payer avec Stripe</span>
                       <span className="text-emerald-700 font-black">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
-                    <button onClick={handleStripeCheckout} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-slate-800 transition">
+                    <button onClick={handleStripeCheckout} className="w-full bg-slate-900 text-white py-3 md:py-4 rounded-2xl font-black text-base md:text-lg hover:bg-slate-800 transition">
                       Continuer vers Stripe Checkout
                     </button>
                     {!stripePublishableKey && <p className="text-sm text-red-500">Stripe indisponible. Ajoutez STRIPE_PUBLISHABLE_KEY.</p>}
