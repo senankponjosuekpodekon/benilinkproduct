@@ -238,6 +238,19 @@ const AdminDashboard: React.FC = () => {
                                 ? `${total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
                                 : `${total.toLocaleString()} F`}
                             </div>
+                            {isEurOrder && (
+                              <div className="mt-1 space-y-1">
+                                {typeof order.subtotalHT === 'number' && (
+                                  <div className="text-xs text-slate-500">HT produits: {order.subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</div>
+                                )}
+                                {typeof order.shippingCostHT === 'number' && (
+                                  <div className="text-xs text-slate-500">Port HT: {order.shippingCostHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</div>
+                                )}
+                                {typeof order.totalVAT === 'number' && (
+                                  <div className="text-xs text-slate-500">TVA: {order.totalVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</div>
+                                )}
+                              </div>
+                            )}
                             {order.totalWeightKg && (
                               <div className="text-xs text-slate-500">{order.totalWeightKg} kg</div>
                             )}

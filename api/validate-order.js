@@ -22,14 +22,16 @@ const PRODUCT_PRICES = PRODUCTS.reduce((acc, p) => {
 }, {});
 
 // Weight-based shipping tiers (EUR) - matches frontend logic
-const SHIPPING_TIERS_EUR = [
-  { maxKg: 0.5, price: 5 },
-  { maxKg: 1, price: 7 },
-  { maxKg: 2, price: 9 },
-  { maxKg: 5, price: 14 },
-  { maxKg: 10, price: 20 },
-  { maxKg: Infinity, price: 30 }
-];
+const getShippingRateEUR = (weightKg) => {
+  if (weightKg < 5) return 3.00;
+  if (weightKg < 200) return 3.00;
+  if (weightKg < 500) return 2.75;
+  if (weightKg < 1000) return 2.50;
+  if (weightKg < 2000) return 2.25;
+  return 1.75;
+};
+
+
 
 // Taux TVA
 const TVA_RATE = 0.20; // 20% pour la France (already included in product prices)
@@ -115,19 +117,44 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ CALCUL SÉCURISÉ DES FRAIS DE LIVRAISON (weight-based EUR)
+    // ✅ VALIDATION POIDS MINIMUM (5kg)
+    if (totalWeightKg < 5) {
+      return res.status(400).json({ 
+        error: 'Poids minimum non atteint',
+        details: `Le poids total de votre commande est de ${totalWeightKg.toFixed(2)} kg. Le poids minimum requis est de 5 kg.`
+      });
+    }
+    
+    // ✅ VALIDATION POIDS MINIMUM (5kg)
+    if (totalWeightKg < 5) {
+      return res.status(400).json({ 
+        error: 'Poids minimum non atteint',
+        details: `Le poids total de votre commande est de ${totalWeightKg.toFixed(2)} kg. Le poids minimum requis est de 5 kg.`
+      });
+    }
+    
+    // ✅ CALCUL SÉCURISÉ DES FRAIS DE LIVRAISON (weight-based EUR) - TOUJOURS APPLIQUÉ
     const delivery = deliveryMethod || 'pickup-tence';
-    let shippingCostEUR = 0;
-    if (delivery !== 'pickup-tence' && delivery !== 'pickup-stetienne') {
-      const tier = SHIPPING_TIERS_EUR.find(t => totalWeightKg <= t.maxKg) || SHIPPING_TIERS_EUR[SHIPPING_TIERS_EUR.length - 1];
-      shippingCostEUR = tier.price;
+    const ratePerKg = getShippingRateEUR(totalWeightKg);
+    const shippingCostHT = Math.round(totalWeightKg * ratePerKg * 100) / 100;
+    // Ajouter la TVA sur les frais de livraison (20%)
+    const shippingCostTTC = Math.round(shippingCostHT * (1 + TVA_RATE) * 100) / 100;
+    
+    // Frais Colissimo/Relais supplémentaires (optionnel, à ajouter)
+    let additionalShippingEUR = 0;
+    if (delivery === 'colissimo' || delivery === 'relais') {
+      // TODO: ajouter frais Colissimo/Relais selon poids
+      // additionalShippingEUR = ...;
     }
 
-    // ✅ CALCUL DE LA TVA INCLUSE (informational only)
-    const vatIncludedEUR = Math.round((calculatedSubtotalEUR * (TVA_RATE / (1 + VAT_RATE))) * 100) / 100;
+    // ✅ CALCUL DE LA TVA (sur produits et livraison)
+    const productVATIncluded = Math.round((calculatedSubtotalEUR * (TVA_RATE / (1 + TVA_RATE))) * 100) / 100;
+    const shippingVAT = Math.round((shippingCostTTC - shippingCostHT) * 100) / 100;
+    const totalVAT = Math.round((productVATIncluded + shippingVAT) * 100) / 100;
 
-    // ✅ TOTAL FINAL VÉRIFIÉ (EUR)
-    const totalAmountEUR = calculatedSubtotalEUR + shippingCostEUR;
+    // ✅ TOTAL FINAL VÉRIFIÉ (EUR) - Shipping TTC + Additional fees
+    const totalShippingEUR = shippingCostTTC + additionalShippingEUR;
+    const totalAmountEUR = calculatedSubtotalEUR + totalShippingEUR;
 
     // 📊 DONNÉES DE LA COMMANDE VALIDÉES (EUR-first)
     const orderData = {
@@ -136,8 +163,14 @@ export default async function handler(req, res) {
       currency: 'EUR',
       items: validatedItems,
       subtotal: calculatedSubtotalEUR,
-      shippingCost: shippingCostEUR,
-      taxAmount: vatIncludedEUR,
+      subtotalHT: Math.round((calculatedSubtotalEUR / (1 + TVA_RATE)) * 100) / 100,
+      shippingCostHT: shippingCostHT,
+      shippingCostTTC: shippingCostTTC,
+      additionalShippingCost: additionalShippingEUR,
+      totalShippingCost: totalShippingEUR,
+      productVAT: productVATIncluded,
+      shippingVAT: shippingVAT,
+      totalVAT: totalVAT,
       totalAmount: totalAmountEUR,
       amountEUR: totalAmountEUR,
       totalWeightKg: Math.round(totalWeightKg * 100) / 100,
@@ -181,10 +214,10 @@ ${orderData.items.map(item =>
 
 💰 FINANCIER:
   Sous-total (TTC): ${orderData.subtotal.toFixed(2)} EUR
-  Livraison:        ${orderData.shippingCost.toFixed(2)} EUR (${orderData.totalWeightKg} kg)
-  TVA incluse:      ${orderData.taxAmount.toFixed(2)} EUR (20%)
+  Livraison HT:     ${orderData.shippingCostHT.toFixed(2)} EUR (${orderData.totalWeightKg} kg)
+  TVA (20%):        ${orderData.totalVAT.toFixed(2)} EUR
   ────────────────────────────────────
-  TOTAL:            ${orderData.amountEUR.toFixed(2)} EUR
+  TOTAL TTC:        ${orderData.amountEUR.toFixed(2)} EUR
 
 👤 CLIENT:
   Nom:       ${orderData.deliveryInfo.fullName}

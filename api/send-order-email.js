@@ -163,20 +163,20 @@ export default async function handler(req, res) {
               <tfoot>
                 ${eurMode ? `
                 <tr>
-                  <td colspan="3" style="padding: 12px; text-align: right;"><strong>Sous-total (TTC):</strong></td>
-                  <td style="padding: 12px; text-align: right; font-weight: bold;">${(orderData.subtotal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
+                  <td colspan="3" style="padding: 12px; text-align: right;"><strong>Sous-total produits HT:</strong></td>
+                  <td style="padding: 12px; text-align: right; font-weight: bold;">${(orderData.subtotalHT ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
                 <tr>
-                  <td colspan="3" style="padding: 12px; text-align: right;">Livraison:</td>
-                  <td style="padding: 12px; text-align: right;">${(orderData.shippingCost ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
+                  <td colspan="3" style="padding: 12px; text-align: right;">Frais de port HT:</td>
+                  <td style="padding: 12px; text-align: right;">${(orderData.shippingCostHT ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
                 <tr>
-                  <td colspan="3" style="padding: 12px; text-align: right;">TVA incluse (20%):</td>
-                  <td style="padding: 12px; text-align: right;">${(orderData.taxAmount ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
+                  <td colspan="3" style="padding: 12px; text-align: right;">TVA (20%):</td>
+                  <td style="padding: 12px; text-align: right;">${(orderData.totalVAT ?? orderData.taxAmount ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
                 <tr style="background: #ecfdf5;">
-                  <td colspan="3" style="padding: 12px; text-align: right; font-size: 18px;"><strong>TOTAL:</strong></td>
-                  <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; color: #059669;">${(orderData.amountEUR ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
+                  <td colspan="3" style="padding: 12px; text-align: right; font-size: 18px;"><strong>TOTAL TTC:</strong></td>
+                  <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; color: #059669;">${(orderData.amountEUR ?? orderData.totalAmount ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>
                 </tr>
                 ` : `
                 <tr>

@@ -34,6 +34,11 @@ const ShippingPolicy: React.FC = () => {
                 BeniLink propose plusieurs options d'expédition pour répondre à vos besoins, que vous commandiez nos 
                 produits naturels béninois ou que vous souhaitiez envoyer des colis personnels entre le Bénin et la France.
               </p>
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mt-4">
+                <p className="text-sm font-bold text-amber-900">
+                  ⚠️ <strong>Commande minimum :</strong> 5 kg pour toutes les expéditions depuis le Bénin vers la France.
+                </p>
+              </div>
             </section>
 
             <section>
@@ -43,16 +48,16 @@ const ShippingPolicy: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <MapPin className="text-emerald-600 flex-shrink-0 mt-1" size={24} />
                   <div>
-                    <h3 className="text-xl font-bold text-emerald-900 mb-2">Retrait gratuit</h3>
+                    <h3 className="text-xl font-bold text-emerald-900 mb-2">Retrait sur place</h3>
                     <p className="text-slate-700 mb-3">
-                      Retirez votre commande gratuitement dans nos points relais :
+                      Retirez votre commande dans nos points relais (frais de transport Bénin → France inclus) :
                     </p>
                     <ul className="space-y-2 text-slate-700">
                       <li><strong>Tence (Haute-Loire) :</strong> Sur rendez-vous</li>
                       <li><strong>Saint-Étienne (Loire) :</strong> Sur rendez-vous</li>
                     </ul>
-                    <p className="text-sm text-slate-600 mt-3">
-                      💡 <strong>Astuce :</strong> Commande prête sous 24-48h après validation du paiement.
+                    <p className="text-sm text-amber-700 font-semibold mt-3">
+                      ⚠️ Les frais maritimes Bénin → France (tarif au kg dégressif) sont toujours appliqués. Le retrait évite uniquement les frais Colissimo/Point Relais.
                     </p>
                   </div>
                 </div>
@@ -69,7 +74,7 @@ const ShippingPolicy: React.FC = () => {
                     <ul className="space-y-2 text-slate-700">
                       <li><strong>Délai :</strong> 2 à 3 jours ouvrés après expédition</li>
                       <li><strong>Suivi :</strong> Numéro de tracking fourni</li>
-                      <li><strong>Tarifs :</strong> Calculés selon le poids (voir grille ci-dessous)</li>
+                      <li><strong>Tarifs :</strong> Frais maritimes Bénin → France + frais Colissimo locaux (en cours de définition)</li>
                     </ul>
                   </div>
                 </div>
@@ -86,7 +91,7 @@ const ShippingPolicy: React.FC = () => {
                     <ul className="space-y-2 text-slate-700">
                       <li><strong>Délai :</strong> 3 à 5 jours ouvrés après expédition</li>
                       <li><strong>Disponibilité :</strong> 7j/7 dans le point relais choisi</li>
-                      <li><strong>Tarifs :</strong> Calculés selon le poids (voir grille ci-dessous)</li>
+                      <li><strong>Tarifs :</strong> Frais maritimes Bénin → France + frais Point Relais locaux (en cours de définition)</li>
                     </ul>
                   </div>
                 </div>
@@ -94,45 +99,53 @@ const ShippingPolicy: React.FC = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">3. Grille tarifaire (poids)</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">3. Grille tarifaire maritime (Bénin → France)</h2>
+              <p className="text-slate-600 mb-4">
+                Frais de transport maritime au kilogramme (dégressifs selon volume total) :
+              </p>
               <div className="overflow-x-auto">
                 <table className="min-w-full border border-slate-200 rounded-xl overflow-hidden">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-slate-700 font-bold">Poids</th>
-                      <th className="px-4 py-3 text-left text-slate-700 font-bold">Tarif</th>
+                      <th className="px-4 py-3 text-left text-slate-700 font-bold">Poids total</th>
+                      <th className="px-4 py-3 text-left text-slate-700 font-bold">Tarif au kg</th>
+                      <th className="px-4 py-3 text-left text-slate-700 font-bold">Exemple (10kg)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     <tr>
-                      <td className="px-4 py-3 text-slate-600">Jusqu'à 0,5 kg</td>
-                      <td className="px-4 py-3 text-emerald-700 font-bold">5,00 €</td>
+                      <td className="px-4 py-3 text-slate-600">5 à 199 kg</td>
+                      <td className="px-4 py-3 text-emerald-700 font-bold">3,00 €/kg</td>
+                      <td className="px-4 py-3 text-slate-600">30,00 €</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-slate-600">Jusqu'à 1 kg</td>
-                      <td className="px-4 py-3 text-emerald-700 font-bold">7,00 €</td>
+                      <td className="px-4 py-3 text-slate-600">200 à 499 kg</td>
+                      <td className="px-4 py-3 text-emerald-700 font-bold">2,75 €/kg</td>
+                      <td className="px-4 py-3 text-slate-600">27,50 €</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-slate-600">Jusqu'à 2 kg</td>
-                      <td className="px-4 py-3 text-emerald-700 font-bold">9,00 €</td>
+                      <td className="px-4 py-3 text-slate-600">500 à 999 kg</td>
+                      <td className="px-4 py-3 text-emerald-700 font-bold">2,50 €/kg</td>
+                      <td className="px-4 py-3 text-slate-600">25,00 €</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-slate-600">Jusqu'à 5 kg</td>
-                      <td className="px-4 py-3 text-emerald-700 font-bold">14,00 €</td>
+                      <td className="px-4 py-3 text-slate-600">1 à 2 tonnes</td>
+                      <td className="px-4 py-3 text-emerald-700 font-bold">2,25 €/kg</td>
+                      <td className="px-4 py-3 text-slate-600">22,50 €</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-slate-600">Jusqu'à 10 kg</td>
-                      <td className="px-4 py-3 text-emerald-700 font-bold">20,00 €</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 text-slate-600">Plus de 10 kg</td>
-                      <td className="px-4 py-3 text-emerald-700 font-bold">30,00 €</td>
+                      <td className="px-4 py-3 text-slate-600">3 tonnes et plus</td>
+                      <td className="px-4 py-3 text-emerald-700 font-bold">1,75 €/kg</td>
+                      <td className="px-4 py-3 text-slate-600">17,50 €</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
               <p className="text-sm text-slate-500 mt-3">
-                💡 Les frais de livraison sont calculés automatiquement au moment du paiement selon le poids total de votre commande.
+                💡 <strong>Formule :</strong> Frais = Poids total × Tarif au kg. Les frais Colissimo/Point Relais (si choisis) s'ajoutent à ces frais maritimes.
+              </p>
+              <p className="text-sm text-amber-700 font-semibold mt-2">
+                ⚠️ <strong>Minimum requis :</strong> 5 kg pour toute commande.
               </p>
             </section>
 

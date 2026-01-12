@@ -40,10 +40,10 @@ ${orderData.items.map((item, index) => `
 `).join('')}
 
 💰 RÉCAPITULATIF FINANCIER:
-   • Sous-total (TTC): ${orderData.amountEUR ? orderData.subtotal?.toFixed(2) + ' EUR' : (orderData.subtotal?.toLocaleString() + ' FCFA')}
-   • Livraison: ${orderData.amountEUR ? (orderData.shippingCost ?? 0).toFixed(2) + ' EUR' : (orderData.shippingCost?.toLocaleString() + ' FCFA')}
-   • TVA incluse (20%): ${orderData.amountEUR ? (orderData.taxAmount ?? 0).toFixed(2) + ' EUR' : (orderData.taxAmount?.toLocaleString() + ' FCFA')}
-   • TOTAL: ${orderData.amountEUR ? orderData.amountEUR.toFixed(2) + ' EUR' : (orderData.totalAmount?.toLocaleString() + ' FCFA')}
+  • Sous-total produits HT: ${orderData.subtotalHT !== undefined ? orderData.subtotalHT.toFixed(2) + ' EUR' : (orderData.subtotal?.toFixed(2) + ' EUR')}
+  • Frais de port HT: ${(orderData.shippingCostHT ?? orderData.shippingCost ?? 0).toFixed(2)} EUR
+  • TVA (20%): ${(orderData.taxAmount ?? orderData.totalVAT ?? 0).toFixed(2)} EUR
+  • TOTAL TTC: ${(orderData.amountEUR ?? orderData.totalAmount ?? 0).toFixed(2)} EUR
 ${orderData.totalWeightKg ? `   • Poids total: ${orderData.totalWeightKg} kg` : ''}
 ${orderData.deliveryMethod ? `   • Mode livraison: ${orderData.deliveryMethod}` : ''}
 

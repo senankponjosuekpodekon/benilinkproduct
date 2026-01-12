@@ -49,6 +49,7 @@ export default async function handler(req, res) {
       };
     });
 
+    // shippingCostEUR attendu TTC
     if (typeof shippingCostEUR === 'number' && shippingCostEUR > 0) {
       line_items.push({
         price_data: {

@@ -314,27 +314,42 @@ const Home: React.FC = () => {
 
   const totalWeightKg = cart.reduce((sum, item) => sum + getUnitWeightKg(item) * item.quantity, 0);
 
-  const SHIPPING_TIERS_EUR = [
-    { maxKg: 0.5, price: 5 },
-    { maxKg: 1, price: 7 },
-    { maxKg: 2, price: 9 },
-    { maxKg: 5, price: 14 },
-    { maxKg: 10, price: 20 },
-    { maxKg: Infinity, price: 30 }
-  ];
+  const getShippingRateEUR = (weightKg: number) => {
+    if (weightKg < 5) return 3.00;          // 5-199kg → 3€/kg
+    if (weightKg < 200) return 3.00;       // 5-199kg → 3€/kg
+    if (weightKg < 500) return 2.75;       // 200-499kg → 2,75€/kg
+    if (weightKg < 1000) return 2.50;      // 500-999kg → 2,50€/kg
+    if (weightKg < 2000) return 2.25;      // 1-2t → 2,25€/kg
+    return 1.75;                            // 3t+ → 1,75€/kg
+  };
 
   const shippingCostEUR = useMemo(() => {
-    if (deliveryMethod === 'pickup-tence' || deliveryMethod === 'pickup-stetienne') return 0;
-    const tier = SHIPPING_TIERS_EUR.find(t => totalWeightKg <= t.maxKg) || SHIPPING_TIERS_EUR[SHIPPING_TIERS_EUR.length - 1];
-    return tier.price;
+    // TOUJOURS appliquer les frais maritimes (Bénin → France)
+    const ratePerKg = getShippingRateEUR(totalWeightKg);
+    let shippingEUR = Math.round(totalWeightKg * ratePerKg * 100) / 100;
+    
+    // Ajouter frais Colissimo/Relais si applicable (TODO: définir tarifs)
+    if (deliveryMethod === 'colissimo' || deliveryMethod === 'relais') {
+      // shippingEUR += additionalColissimoFee;
+    }
+    
+    return shippingEUR;
   }, [deliveryMethod, totalWeightKg]);
 
-  const subtotal = cartTotal; // Already EUR TTC per product
-  // VAT component included in subtotal (for display only)
-  const vatIncluded = Math.round((subtotal * (VAT_RATE / (1 + VAT_RATE))) * 100) / 100;
-  const totalWithShipping = subtotal + shippingCostEUR;
+  // Calcul HT/TTC pour affichage et paiements
+  const subtotalHT = Math.round((cartTotal / (1 + VAT_RATE)) * 100) / 100;
+  const shippingHT = shippingCostEUR; // frais de port hors taxe
+  const totalHT = Math.round((subtotalHT + shippingHT) * 100) / 100;
+  const totalVAT = Math.round((totalHT * VAT_RATE) * 100) / 100;
+  const totalTTC = Math.round((totalHT + totalVAT) * 100) / 100;
 
   const handleCheckout = async () => {
+    // Vérifier le poids minimum
+    if (totalWeightKg < 5) {
+      alert(`⚠️ Poids minimum requis : 5 kg\nPoids actuel : ${totalWeightKg.toFixed(2)} kg\n\nVeuillez ajouter des produits pour atteindre le minimum.`);
+      return;
+    }
+    
     // Vérifier que les infos de livraison sont remplies
     if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
       alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
@@ -375,12 +390,12 @@ const Home: React.FC = () => {
     // Message WhatsApp (affichage visuel pour le client)
     const message = `🛍️ NOUVELLE COMMANDE BENILINK\n\n` +
       `📦 PRODUITS :\n` +
-      cart.map(item => `• ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR`).join('\n') +
+      cart.map(item => `• ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR TTC`).join('\n') +
       `\n\n💰 RÉCAPITULATIF :\n` +
-      `• Sous-total (TTC) : ${subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
-      `• Livraison (${deliveryMethod.replace('-', ' ')}) : ${shippingCostEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
-      `• TVA incluse (20%) : ${vatIncluded.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
-      `• TOTAL : ${totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n\n` +
+      `• Sous-total produits HT : ${subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
+      `• Frais de port HT (${deliveryMethod.replace('-', ' ')}) : ${shippingHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
+      `• TVA (20%) : ${totalVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n` +
+      `• TOTAL TTC : ${totalTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR\n\n` +
       `📍 LIVRAISON :\n` +
       `• Nom : ${deliveryData.fullName}\n` +
       `• Téléphone : ${deliveryData.phone}\n` +
@@ -445,6 +460,11 @@ const Home: React.FC = () => {
       alert('Stripe indisponible: VITE_STRIPE_PUBLISHABLE_KEY manquant.');
       return;
     }
+    // Vérifier le poids minimum
+    if (totalWeightKg < 5) {
+      alert(`⚠️ Poids minimum requis : 5 kg\nPoids actuel : ${totalWeightKg.toFixed(2)} kg\n\nVeuillez ajouter des produits pour atteindre le minimum.`);
+      return;
+    }
     // Vérifier que les infos de livraison sont remplies
     if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
       alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
@@ -457,8 +477,8 @@ const Home: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cart.map(i => ({ name: i.name, priceEUR: i.price, quantity: i.quantity })),
-          shippingCostEUR,
-          totalAmount: totalWithShipping,
+          shippingCostEUR: Math.round(shippingHT * (1 + VAT_RATE) * 100) / 100,
+          totalAmount: totalTTC,
           deliveryInfo: deliveryData,
           deliveryMethod: deliveryMethod,
           currency: 'EUR',
@@ -555,15 +575,15 @@ const Home: React.FC = () => {
             {
               amount: {
                 currency_code: 'EUR',
-                value: totalWithShipping.toFixed(2),
+                value: totalTTC.toFixed(2),
                 breakdown: {
                   item_total: {
                     currency_code: 'EUR',
-                    value: subtotal.toFixed(2)
+                    value: cartTotal.toFixed(2)
                   },
                   shipping: {
                     currency_code: 'EUR',
-                    value: shippingCostEUR.toFixed(2)
+                    value: (Math.round(shippingHT * (1 + VAT_RATE) * 100) / 100).toFixed(2)
                   }
                 },
               },
@@ -596,11 +616,11 @@ const Home: React.FC = () => {
                 priceEUR: i.price, 
                 quantity: i.quantity 
               })),
-              subtotal: subtotal,
-              shippingCost: shippingCostEUR,
-              taxAmount: vatIncluded,
-              totalAmount: totalWithShipping,
-              amountEUR: totalWithShipping,
+              subtotalHT: subtotalHT,
+              shippingCostHT: shippingHT,
+              taxAmount: totalVAT,
+              totalAmount: totalTTC,
+              amountEUR: totalTTC,
               currency: 'EUR',
               deliveryInfo: deliveryData,
               paymentMethod: 'paypal',
@@ -618,7 +638,7 @@ const Home: React.FC = () => {
     }).render(paypalContainerRef.current);
 
     setPaypalStatus('ready');
-  }, [cart, subtotal, shippingCostEUR, totalWithShipping, deliveryData]);
+  }, [cart, subtotalHT, shippingHT, totalTTC, deliveryData]);
 
   useEffect(() => {
     if (!isCartOpen || cart.length === 0 || paymentMethod !== 'paypal') return;
@@ -1178,7 +1198,17 @@ const Home: React.FC = () => {
                         <div className="flex items-center gap-5 mt-4">
                           <div className="flex items-center bg-slate-100 rounded-2xl p-1.5 ring-1 ring-slate-200/50">
                             <button onClick={() => updateQuantity(item.id, -1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Minus size={16} /></button>
-                            <span className="w-12 text-center text-sm font-black text-slate-800">{item.quantity}</span>
+                            <input 
+                              type="number" 
+                              min="1" 
+                              max="999" 
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const newQty = parseInt(e.target.value) || 1;
+                                updateQuantity(item.id, newQty - item.quantity);
+                              }}
+                              className="w-12 text-center text-sm font-black text-slate-800 bg-transparent border-none outline-none"
+                            />
                             <button onClick={() => updateQuantity(item.id, 1)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm"><Plus size={16} /></button>
                           </div>
                           <button onClick={() => updateQuantity(item.id, -item.quantity)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
@@ -1315,29 +1345,29 @@ const Home: React.FC = () => {
             </div>
 
             {cart.length > 0 && (
-              <div className="p-6 md:p-8 border-t border-slate-50 bg-slate-50/50 space-y-5 md:space-y-6">
+              <div className="p-10 border-t border-slate-50 bg-slate-50/50 space-y-6">
                 {/* Récapitulatif */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600 font-bold">Sous-total (TTC)</span>
-                    <span className="font-black text-slate-900">{subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                    <span className="text-slate-600 font-bold">Sous-total produits HT</span>
+                    <span className="font-black text-slate-900">{subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600 font-bold">Poids total</span>
                     <span className="font-black text-slate-900">{totalWeightKg.toFixed(2)} kg</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600 font-bold">Livraison ({deliveryMethod.replace('-', ' ')})</span>
-                    <span className="font-black text-emerald-600">{shippingCostEUR.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                    <span className="text-slate-600 font-bold">Frais de port HT ({deliveryMethod.replace('-', ' ')})</span>
+                    <span className="font-black text-slate-900">{shippingHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>TVA incluse (20%)</span>
-                    <span>{vatIncluded.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                  <div className="flex items-center justify-between text-sm border-t border-slate-200 pt-3">
+                    <span className="text-slate-600 font-bold">TVA (20%)</span>
+                    <span className="font-black text-emerald-600">{totalVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                   </div>
                   <div className="pt-3 border-t border-slate-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Total à payer</span>
-                      <span className="text-4xl font-black text-emerald-950">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-sm">EUR</span></span>
+                      <span className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Total TTC</span>
+                      <span className="text-4xl font-black text-emerald-950">{totalTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-sm">EUR</span></span>
                     </div>
                   </div>
                 </div>
@@ -1360,7 +1390,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
                       <span>Payer avec PayPal</span>
-                      <span className="text-emerald-700 font-black">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                      <span className="text-emerald-700 font-black">{totalTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
                     <div ref={paypalContainerRef} className="min-h-[60px]" />
                     {paypalStatus === 'loading' && <p className="text-sm text-slate-500">Chargement des boutons PayPal...</p>}
@@ -1370,7 +1400,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
                       <span>Payer avec Stripe</span>
-                      <span className="text-emerald-700 font-black">{totalWithShipping.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                      <span className="text-emerald-700 font-black">{totalTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
                     </div>
                     <button onClick={handleStripeCheckout} className="w-full bg-slate-900 text-white py-3 md:py-4 rounded-2xl font-black text-base md:text-lg hover:bg-slate-800 transition">
                       Continuer vers Stripe Checkout
