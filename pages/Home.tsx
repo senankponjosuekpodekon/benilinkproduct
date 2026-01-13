@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { PRODUCTS, WHATSAPP_NUMBER, TESTIMONIALS, VAT_RATE } from '../constants';
 import { Product, CategoryFilter, ChatMessage, CartItem } from '../types';
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&q=80&w=800&h=600';
+
 declare global {
   interface Window {
     paypal?: any;
@@ -30,42 +32,58 @@ const CategoryTab: React.FC<{
   </button>
 );
 
-const ProductCard: React.FC<{ product: Product; onAddToCart: (p: Product) => void }> = ({ product, onAddToCart }) => (
-  <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-slate-100 flex flex-col h-full">
-    <div className="relative h-40 sm:h-48 overflow-hidden">
-      <img 
-        src={product.image} 
-        alt={product.name} 
-        loading="lazy"
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-      />
-      <div className="absolute top-2 left-2">
-        <span className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg text-[8px] font-black text-emerald-800 uppercase tracking-wider shadow-sm">
-          {product.category}
-        </span>
-      </div>
-    </div>
-    <div className="p-3 sm:p-4 flex flex-col flex-grow">
-      <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-2 leading-snug line-clamp-2 group-hover:text-emerald-700 transition-colors">
-        {product.name}
-      </h3>
-      <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
-        <div className="flex flex-col">
-          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wide">Prix/{product.unit}</span>
-          <span className="text-lg sm:text-xl font-black text-emerald-600">
-            {product.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-[10px] font-medium">EUR TTC</span>
+const ProductCard: React.FC<{ product: Product; onAddToCart: (p: Product) => void }> = ({ product, onAddToCart }) => {
+  const [imgSrc, setImgSrc] = useState(product.image);
+
+  useEffect(() => {
+    console.log(`[ProductCard] ${product.name} → Image: ${product.image}`);
+    setImgSrc(product.image);
+  }, [product.image, product.name]);
+
+  const handleImageError = useCallback(() => {
+    if (imgSrc === FALLBACK_IMAGE) return;
+    console.warn(`❌ Image non chargée pour ${product.name}: ${imgSrc}`);
+    setImgSrc(FALLBACK_IMAGE);
+  }, [imgSrc, product.name]);
+
+  return (
+    <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-slate-100 flex flex-col h-full">
+      <div className="relative h-40 sm:h-48 overflow-hidden">
+        <img 
+          src={imgSrc} 
+          alt={product.name} 
+          loading="lazy"
+          onError={handleImageError}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
+        <div className="absolute top-2 left-2">
+          <span className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg text-[8px] font-black text-emerald-800 uppercase tracking-wider shadow-sm">
+            {product.category}
           </span>
         </div>
-        <button 
-          onClick={() => onAddToCart(product)}
-          className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm active:scale-90"
-        >
-          <Plus size={20} className="sm:w-6 sm:h-6" />
-        </button>
+      </div>
+      <div className="p-3 sm:p-4 flex flex-col flex-grow">
+        <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-2 leading-snug line-clamp-2 group-hover:text-emerald-700 transition-colors">
+          {product.name}
+        </h3>
+        <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wide">Prix/{product.unit}</span>
+            <span className="text-lg sm:text-xl font-black text-emerald-600">
+              {product.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-[10px] font-medium">EUR TTC</span>
+            </span>
+          </div>
+          <button 
+            onClick={() => onAddToCart(product)}
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm active:scale-90"
+          >
+            <Plus size={20} className="sm:w-6 sm:h-6" />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TestimonialCard: React.FC<{ testimonial: typeof TESTIMONIALS[0] }> = ({ testimonial }) => (
   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 group">

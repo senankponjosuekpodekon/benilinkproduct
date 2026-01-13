@@ -75,7 +75,10 @@ Tomate en poudre - 125g,4493 FCFA
 Poudre de piment vert - 125g,5247 FCFA
 Poudre de piment rouge - 125g,4493 FCFA`;
 
-// Robust images from Unsplash IDs
+// Serve images from /public/products (absolute path for dev/preview)
+const PRODUCTS_BASE = '/products';
+
+// Robust images from Unsplash IDs (fallbacks)
 const IMAGE_POOLS = {
   Huile: [
     'photo-1611080626919-7cf5a9dbab5b',
@@ -121,6 +124,55 @@ const IMAGE_POOLS = {
   ]
 };
 
+// Local product visuals (prefer local over Unsplash for key items)
+const LOCAL_IMAGES: Record<string, string> = {
+  'huile-de-neem-pressee-a-froid': 'huile-de-neem.jpg',
+  'huile-d-avocat-extra-vierge': 'huile-d-avocat.jpg',
+  'beurre-de-karite-brut': 'beurre-de-karite.jpg',
+  'huile-de-ricin-pressee-a-froid': 'huile-de-ricin.jpg',
+  'huile-de-palmiste-brute': 'huile-de-palmiste.jpg',
+  'huile-de-coco-pressee-a-froid': 'huile-de-coco.jpg',
+  'huile-de-tournesol-extra-vierge': 'huile-de-tournesol.jpg',
+  'huile-de-baobab-pressee-a-froid': 'huile-de-baobab.jpg',
+  'huile-de-soja-extra-vierge': 'huile-de-soja.jpg',
+  'huile-de-nigelle-pressee-a-froid': 'huile-de-nigelle.jpg',
+  'huile-d-hibiscus-pure': 'huile-d-hibiscuit.jpg',
+  'huile-de-carotte-pure': 'huile-de-carotte.jpg',
+  'huile-de-fenugrec-pressee-a-froid': 'huile-de-fenugrec.jpg',
+  'huile-d-akpi-pressee-a-froid': 'huile-d-akpi.jpg',
+  'poudre-de-moringa-naturelle': 'poudre-de-moringa.jpg',
+  'poudre-de-neem-naturelle': 'poudre-de-neem.jpg',
+  'huile-de-moringa-pressee-a-froid': 'huile-de-moringa.jpg',
+  'huile-de-sesame-pressee-a-froid': 'huile-de-sesame.jpg',
+  'poudre-de-baobab-tamisee-en-vrac': 'poudre-de-baobab.jpg',
+  'huile-rouge-500ml': 'huile-rouge.jpg',
+  'igname-frais-1kg': 'igname-frais.jpg',
+  'kluiklui-galette-d-arachide-croustillante-300g': 'klui-klui.jpg',
+  'noix-d-acajou-1kg': 'noix-d-acajou.jpg',
+  'pomme-de-terre-1kg': 'pomme-de-terre.jpg',
+  'aklui-de-sorgho-600g': 'aklui-de-sorgho.jpg',
+  'farine-de-mais-1kg': 'farine-de-mais.jpg',
+  'farine-de-telibor-cosette-d-igname-1kg': 'farine-de-telibo.jpg',
+  'aklui-de-mais-600g': 'aklui-de-mais.jpg',
+  'aklui-de-mil-600g': 'aklui-de-mil.jpg',
+  'farine-de-agbeli-600g': 'farine-de-agbeli.jpg',
+  'farine-de-riz-ablo-500g': 'farine-de-riz.jpg',
+  'farine-de-mawe-mais-600g': 'farine-de-mawe.jpg',
+  'farine-de-akassa-600g': 'farine-de-akassa.jpg',
+  'farine-de-ata-gbaza-300g': 'farine-de-ata-gbaza.jpg',
+  'farine-de-adowe-300g': 'farine-de-adowe.jpg',
+  'farine-de-mawe-sorgho-600g': 'farine-de-mawe-sorgho.jpg',
+  'tagliatelle-au-manioc': 'tigatelle-au-manioc.jpg'
+};
+
+const slugify = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
 export const parseCSVData = (csv: string): Product[] => {
   const lines = csv.split('\n').slice(1);
   return lines.map((line, index) => {
@@ -163,6 +215,8 @@ export const parseCSVData = (csv: string): Product[] => {
 
     const pool = IMAGE_POOLS[category];
     const imageId = pool[index % pool.length];
+    const slug = slugify(name);
+    const localImage = LOCAL_IMAGES[slug];
 
     // Compute EUR price with double 50% markup and VAT included
     const priceFCFAWithMarkup = Math.round(basePriceFCFA * MARKUP_FACTOR);
@@ -176,7 +230,7 @@ export const parseCSVData = (csv: string): Product[] => {
       currency: 'EUR',
       category,
       unit,
-      image: `https://images.unsplash.com/${imageId}?auto=format&fit=crop&q=80&w=800&h=600`,
+      image: localImage ? `${PRODUCTS_BASE}/${localImage}` : `https://images.unsplash.com/${imageId}?auto=format&fit=crop&q=80&w=800&h=600`,
     };
   });
 };

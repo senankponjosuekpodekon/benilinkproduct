@@ -3,6 +3,104 @@ export const FCFA_PER_EUR = 655;
 export const MARKUP_FACTOR = 3.0;
 export const VAT_RATE = 0.20;
 
+// Serve images from /public/products (absolute path for dev/preview)
+const PRODUCTS_BASE = '/products';
+
+// Local product visuals
+const LOCAL_IMAGES = {
+  'huile-de-neem-pressee-a-froid': 'huile-de-neem.jpg',
+  'huile-d-avocat-extra-vierge': 'huile-d-avocat.jpg',
+  'beurre-de-karite-brut': 'beurre-de-karite.jpg',
+  'huile-de-ricin-pressee-a-froid': 'huile-de-ricin.jpg',
+  'huile-de-palmiste-brute': 'huile-de-palmiste.jpg',
+  'huile-de-coco-pressee-a-froid': 'huile-de-coco.jpg',
+  'huile-de-tournesol-extra-vierge': 'huile-de-tournesol.jpg',
+  'huile-de-baobab-pressee-a-froid': 'huile-de-baobab.jpg',
+  'huile-de-soja-extra-vierge': 'huile-de-soja.jpg',
+  'huile-de-nigelle-pressee-a-froid': 'huile-de-nigelle.jpg',
+  'huile-d-hibiscus-pure': 'huile-d-hibiscuit.jpg',
+  'huile-de-carotte-pure': 'huile-de-carotte.jpg',
+  'huile-de-fenugrec-pressee-a-froid': 'huile-de-fenugrec.jpg',
+  'huile-d-akpi-pressee-a-froid': 'huile-d-akpi.jpg',
+  'poudre-de-moringa-naturelle': 'poudre-de-moringa.jpg',
+  'poudre-de-neem-naturelle': 'poudre-de-neem.jpg',
+  'huile-de-moringa-pressee-a-froid': 'huile-de-moringa.jpg',
+  'huile-de-sesame-pressee-a-froid': 'huile-de-sesame.jpg',
+  'poudre-de-baobab-tamisee-en-vrac': 'poudre-de-baobab.jpg',
+  'huile-rouge-500ml': 'huile-rouge.jpg',
+  'igname-frais-1kg': 'igname-frais.jpg',
+  'kluiklui-galette-d-arachide-croustillante-300g': 'klui-klui.jpg',
+  'noix-d-acajou-1kg': 'noix-d-acajou.jpg',
+  'pomme-de-terre-1kg': 'pomme-de-terre.jpg',
+  'aklui-de-sorgho-600g': 'aklui-de-sorgho.jpg',
+  'farine-de-mais-1kg': 'farine-de-mais.jpg',
+  'farine-de-telibor-cosette-d-igname-1kg': 'farine-de-telibo.jpg',
+  'aklui-de-mais-600g': 'aklui-de-mais.jpg',
+  'aklui-de-mil-600g': 'aklui-de-mil.jpg',
+  'farine-de-agbeli-600g': 'farine-de-agbeli.jpg',
+  'farine-de-riz-ablo-500g': 'farine-de-riz.jpg',
+  'farine-de-mawe-mais-600g': 'farine-de-mawe.jpg',
+  'farine-de-akassa-600g': 'farine-de-akassa.jpg',
+  'farine-de-ata-gbaza-300g': 'farine-de-ata-gbaza.jpg',
+  'farine-de-adowe-300g': 'farine-de-adowe.jpg',
+  'farine-de-mawe-sorgho-600g': 'farine-de-mawe-sorgho.jpg',
+  'tagliatelle-au-manioc': 'tigatelle-au-manioc.jpg'
+};
+
+// Fallback Unsplash images (same as constants.ts)
+const IMAGE_POOLS = {
+  Huile: [
+    'photo-1611080626919-7cf5a9dbab5b',
+    'photo-1608571423902-eed4a5ad8108',
+    'photo-1620916566398-39f1143ab7be',
+    'photo-1544161515-4af6b1d4738c',
+    'photo-1612531388305-643037233868',
+    'photo-1544161513-0179fe746fd5'
+  ],
+  Beurre: [
+    'photo-1590159357421-44754a10874e',
+    'photo-1596755094514-f87e34085b2c',
+    'photo-1556228720-195a672e8a03'
+  ],
+  Poudre: [
+    'photo-1515255384510-333066917637',
+    'photo-1542618953-274e6459146c',
+    'photo-1542618953-b295c2f8149f'
+  ],
+  Farine: [
+    'photo-1509440159596-0249088772ff',
+    'photo-1628840042765-356cda07504e',
+    'photo-1574323347407-f5e1ad6d020b',
+    'photo-1601526714465-bdd38c2b83ff'
+  ],
+  Conserve: [
+    'photo-1599598938194-c9d8c20b1a89',
+    'photo-1619566636858-adf3ef46400b',
+    'photo-1573855619003-97b4799dcd8b'
+  ],
+  Céréale: [
+    'photo-1586201375761-83865001e31c',
+    'photo-1518977676601-b53f82aba655',
+    'photo-1604908176997-125f25cc6f3d',
+    'photo-1612528443702-f6741f70a049'
+  ],
+  Épice: [
+    'photo-1596040008851-e229b5a73c57',
+    'photo-1599909533301-8a6b7c6c3e88',
+    'photo-1506368249639-73a05d6f6488',
+    'photo-1587411768390-609139b54d5e',
+    'photo-1596040008853-f1b5b4b0b1b7'
+  ]
+};
+
+const slugify = (value) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
 const RAW_DATA = `MATIERES PREMIERES,PRIX LITRE/KILOS
 Huile de neem pressée à froid,6750 FCFA
 Huile d'avocat extra vierge,12000 FCFA
@@ -117,13 +215,19 @@ function parseCSVData(csv) {
     const priceEURHT = priceFCFAWithMarkup / FCFA_PER_EUR;
     const priceEURTTC = Math.round(priceEURHT * (1 + VAT_RATE) * 100) / 100; // 2 decimals
 
+    const pool = IMAGE_POOLS[category];
+    const imageId = pool[index % pool.length];
+    const slug = slugify(name);
+    const localImage = LOCAL_IMAGES[slug];
+
     return {
       id: `prod-${index}`,
       name,
       price: priceEURTTC,
       currency: 'EUR',
       category,
-      unit
+      unit,
+      image: localImage ? `${PRODUCTS_BASE}/${localImage}` : `https://images.unsplash.com/${imageId}?auto=format&fit=crop&q=80&w=800&h=600`,
     };
   });
 }
