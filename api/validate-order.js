@@ -24,17 +24,47 @@ export default async function handler(req, res) {
   let PRODUCTS = [];
   try {
     const constantsModule = await import('../constants.js');
-    PRODUCTS = constantsModule.PRODUCTS || [];
+    // Handle both default export and named export
+    PRODUCTS = constantsModule.PRODUCTS || constantsModule.default?.PRODUCTS || [];
+    
+    if (!PRODUCTS || PRODUCTS.length === 0) {
+      console.warn('⚠️ PRODUCTS vide ou non trouvé dans constants.js');
+      // Fallback: retourner une erreur explicite
+      return res.status(500).json({ 
+        error: 'Product database not loaded',
+        details: 'Constants.js is not properly configured'
+      });
+    }
   } catch (e) {
-    console.error('Failed to load PRODUCTS:', e);
-    return res.status(500).json({ error: 'Failed to load product database' });
+    console.error('❌ Failed to load PRODUCTS from constants.js:', {
+      message: e.message,
+      code: e.code,
+      stack: e.stack
+    });
+    return res.status(500).json({ 
+      error: 'Failed to load product database',
+      details: e.message 
+    });
   }
 
   // Build product lookup by name
-  const PRODUCT_PRICES = PRODUCTS.reduce((acc, p) => {
-    acc[p.name] = { eur: p.price, unit: p.unit };
-    return acc;
-  }, {});
+  let PRODUCT_PRICES = {};
+  try {
+    PRODUCT_PRICES = PRODUCTS.reduce((acc, p) => {
+      if (!p.name || !p.price) {
+        console.warn(`⚠️ Product invalide:`, p);
+        return acc;
+      }
+      acc[p.name] = { eur: p.price, unit: p.unit || 'unité' };
+      return acc;
+    }, {});
+  } catch (e) {
+    console.error('❌ Error building product price lookup:', e);
+    return res.status(500).json({ 
+      error: 'Failed to process products',
+      details: e.message 
+    });
+  }
 
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
