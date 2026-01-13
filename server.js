@@ -7,6 +7,11 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 
+// API Handlers
+import validateOrderHandler from './api/validate-order.js';
+import ordersAdminHandler from './api/orders-admin.js';
+import stripeWebhookHandler from './api/stripe-webhook.js';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -19,6 +24,11 @@ const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 app.use('/api', apiLimiter);
+
+// ✅ API Routes
+app.post('/api/validate-order', validateOrderHandler);
+app.get('/api/orders-admin', ordersAdminHandler);
+app.post('/api/stripe-webhook', stripeWebhookHandler);
 
 // Vite integration (dev) or static (prod)
 const DEFAULT_PORT = Number(process.env.PORT || 3000);
