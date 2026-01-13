@@ -6,21 +6,6 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import PRODUCTS from constants to get server-side EUR prices
-let PRODUCTS = [];
-try {
-  const constantsModule = await import('../constants.js');
-  PRODUCTS = constantsModule.PRODUCTS || [];
-} catch (e) {
-  console.error('Failed to load PRODUCTS:', e);
-}
-
-// Build product lookup by name
-const PRODUCT_PRICES = PRODUCTS.reduce((acc, p) => {
-  acc[p.name] = { eur: p.price, unit: p.unit };
-  return acc;
-}, {});
-
 // Weight-based shipping tiers (EUR) - matches frontend logic
 const getShippingRateEUR = (weightKg) => {
   if (weightKg < 5) return 3.00;
@@ -31,12 +16,26 @@ const getShippingRateEUR = (weightKg) => {
   return 1.75;
 };
 
-
-
 // Taux TVA
-const TVA_RATE = 0.20; // 20% pour la France (already included in product prices)
+const TVA_RATE = 0.20; // 20% pour la France
 
 export default async function handler(req, res) {
+  // Load PRODUCTS inside handler
+  let PRODUCTS = [];
+  try {
+    const constantsModule = await import('../constants.js');
+    PRODUCTS = constantsModule.PRODUCTS || [];
+  } catch (e) {
+    console.error('Failed to load PRODUCTS:', e);
+    return res.status(500).json({ error: 'Failed to load product database' });
+  }
+
+  // Build product lookup by name
+  const PRODUCT_PRICES = PRODUCTS.reduce((acc, p) => {
+    acc[p.name] = { eur: p.price, unit: p.unit };
+    return acc;
+  }, {});
+
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
