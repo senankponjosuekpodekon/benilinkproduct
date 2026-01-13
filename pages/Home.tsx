@@ -351,7 +351,7 @@ const Home: React.FC = () => {
     }
     
     // Vérifier que les infos de livraison sont remplies
-    if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
+    if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city || !deliveryData.country) {
       alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
       return;
     }
@@ -466,7 +466,7 @@ const Home: React.FC = () => {
       return;
     }
     // Vérifier que les infos de livraison sont remplies
-    if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
+    if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city || !deliveryData.country) {
       alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
       return;
     }
@@ -603,7 +603,7 @@ const Home: React.FC = () => {
       },
       onApprove: async (_: unknown, actions: any) => {
         // Vérifier que les infos de livraison sont remplies
-        if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city) {
+        if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city || !deliveryData.country) {
           alert('⚠️ Veuillez remplir toutes les informations de livraison avant de valider le paiement.');
           return;
         }
