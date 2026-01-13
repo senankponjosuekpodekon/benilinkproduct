@@ -52,7 +52,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { items, deliveryInfo, paymentMethod, deliveryMethod } = req.body;
+    // Parse body if it's a string
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { items, deliveryInfo, paymentMethod, deliveryMethod } = body;
 
     // ✅ VALIDATION DES DONNÉES
     if (!items || !Array.isArray(items) || items.length === 0) {
