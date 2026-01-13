@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Home } from 'lucide-react';
 
 const CheckoutSuccess: React.FC = () => {
   const navigate = useNavigate();
+  const [orderId, setOrderId] = useState<string>('');
+
+  useEffect(() => {
+    // Récupérer le vrai numéro de commande depuis sessionStorage
+    const storedOrderId = sessionStorage.getItem('stripe_order_id');
+    if (storedOrderId) {
+      setOrderId(storedOrderId);
+      sessionStorage.removeItem('stripe_order_id');
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f8faf7] flex flex-col items-center justify-center px-4">
@@ -18,14 +28,19 @@ const CheckoutSuccess: React.FC = () => {
           Merci pour votre commande. Nous vous enverrons un email de confirmation très bientôt.
         </p>
 
-        <div className="bg-emerald-50 rounded-2xl p-8 mb-10 border border-emerald-100">
-          <p className="text-slate-600 mb-3">
-            Numero de commande
-          </p>
-          <p className="text-2xl font-black text-emerald-600 font-mono">
-            #000{Math.floor(Math.random() * 10000)}
-          </p>
-        </div>
+        {orderId && (
+          <div className="bg-emerald-50 rounded-2xl p-8 mb-10 border border-emerald-100">
+            <p className="text-slate-600 mb-3">
+              Numéro de commande
+            </p>
+            <p className="text-2xl font-black text-emerald-600 font-mono">
+              {orderId}
+            </p>
+            <p className="text-xs text-slate-500 mt-3">
+              Conservez ce numéro pour votre suivi
+            </p>
+          </div>
+        )}
 
         <button 
           onClick={() => navigate('/')}

@@ -356,6 +356,8 @@ const Home: React.FC = () => {
       return;
     }
 
+    let orderId = null;
+    
     // ✅ Valider et sauvegarder la commande via l'API sécurisée
     try {
       const response = await fetch('/api/validate-order', {
@@ -365,7 +367,6 @@ const Home: React.FC = () => {
           items: cart.map(i => ({ 
             name: i.name, 
             quantity: i.quantity 
-            // Prix envoyé mais recalculé côté serveur pour sécurité
           })),
           deliveryInfo: deliveryData,
           deliveryMethod: deliveryMethod,
@@ -375,20 +376,20 @@ const Home: React.FC = () => {
 
       const result = await response.json();
       
-      if (!result.success) {
-        alert(`❌ Erreur : ${result.error || 'Impossible de valider la commande'}`);
-        return;
+      if (!response.ok || !result.success) {
+        console.warn('⚠️ API validation échouée, continuation sans ID de commande:', result);
+        // On continue quand même - c'est un fallback
+      } else {
+        orderId = result.orderId;
+        console.log(`✅ Commande validée : ${orderId}`);
       }
-
-      console.log(`✅ Commande validée : ${result.orderId}`);
     } catch (error) {
       console.error('❌ Erreur validation commande:', error);
-      alert('Erreur de connexion. Vérifiez votre connexion internet.');
-      return;
+      // On continue quand même pour ne pas bloquer WhatsApp
     }
 
     // Message WhatsApp (affichage visuel pour le client)
-    const message = `🛍️ NOUVELLE COMMANDE BENILINK\n\n` +
+    const message = `🛍️ NOUVELLE COMMANDE BENILINK${orderId ? `\n📌 Numéro : ${orderId}` : ''}\n\n` +
       `📦 PRODUITS :\n` +
       cart.map(item => `• ${item.name} (${item.quantity} ${item.unit}${item.quantity > 1 ? 's' : ''}) : ${(item.price * item.quantity).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR TTC`).join('\n') +
       `\n\n💰 RÉCAPITULATIF :\n` +
@@ -399,15 +400,26 @@ const Home: React.FC = () => {
       `📍 LIVRAISON :\n` +
       `• Nom : ${deliveryData.fullName}\n` +
       `• Téléphone : ${deliveryData.phone}\n` +
-      `• Email : ${deliveryData.email}\n` +
+      `• Email : ${deliveryData.email || 'Non fourni'}\n` +
       `• Adresse : ${deliveryData.address}\n` +
       `• Ville : ${deliveryData.city}\n` +
-      `• Code postal : ${deliveryData.postalCode}\n` +
+      `• Code postal : ${deliveryData.postalCode || 'N/A'}\n` +
       `• Pays : ${deliveryData.country}\n\n` +
       `Merci de confirmer la disponibilité ! 🙏`;
     
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    
+    // Afficher la confirmation avec le numéro de commande
+    if (orderId) {
+      alert(`✅ Commande créée !\n\nNuméro : ${orderId}\n\nVous allez être redirigé vers WhatsApp...`);
+    }
+    
+    // Ouvrir WhatsApp
     window.open(whatsappUrl, '_blank');
+    
+    // Vider le panier après succès
+    clearCart();
+    setIsCartOpen(false);
   };
 
   const clearCart = () => {
@@ -456,48 +468,81 @@ const Home: React.FC = () => {
   };
 
   const handleStripeCheckout = async () => {
-    if (!stripePublishableKey) {
-      alert('Stripe indisponible: VITE_STRIPE_PUBLISHABLE_KEY manquant.');
-      return;
-    }
     // Vérifier le poids minimum
     if (totalWeightKg < 5) {
       alert(`⚠️ Poids minimum requis : 5 kg\nPoids actuel : ${totalWeightKg.toFixed(2)} kg\n\nVeuillez ajouter des produits pour atteindre le minimum.`);
       return;
     }
+
     // Vérifier que les infos de livraison sont remplies
     if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city || !deliveryData.country) {
       alert('⚠️ Veuillez remplir toutes les informations de livraison avant de commander.');
       return;
     }
+
+    if (!stripePublishableKey) {
+      alert('Stripe indisponible: VITE_STRIPE_PUBLISHABLE_KEY manquant.');
+      return;
+    }
+
     if (cart.length === 0) return;
+
     try {
-      const res = await fetch('/api', {
+      // Appeler /api/validate-order pour avoir les détails sécurisés de la commande
+      const validationRes = await fetch('/api/validate-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart.map(i => ({ name: i.name, priceEUR: i.price, quantity: i.quantity })),
-          shippingCostEUR: Math.round(shippingHT * (1 + VAT_RATE) * 100) / 100,
-          totalAmount: totalTTC,
+          items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
           deliveryInfo: deliveryData,
           deliveryMethod: deliveryMethod,
-          currency: 'EUR',
-          baseUrl: appBaseUrl,
-          successPath: stripeSuccessPath,
-          cancelPath: stripeCancelPath
+          paymentMethod: 'stripe'
         })
       });
-      let data: any = null;
-      try { data = await res.json(); } catch (_) { /* no body */ }
-      if (!res.ok || !data || !data.sessionId) {
-        const msg = data?.error || data?.details || `Échec API Stripe (${res.status})`;
+
+      const validationResult = await validationRes.json();
+      if (!validationRes.ok || !validationResult.success) {
+        alert(`❌ Erreur validation commande: ${validationResult.error}`);
+        return;
+      }
+
+      const orderId = validationResult.orderId;
+      sessionStorage.setItem('stripe_order_id', orderId);
+
+      // Créer la session Stripe checkout avec les montants validés
+      const checkoutRes = await fetch('/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(i => ({ 
+            name: i.name, 
+            priceEUR: i.price,  // Le prix du frontend sera comparé côté serveur
+            quantity: i.quantity 
+          })),
+          shippingCostEUR: Math.round(shippingHT * (1 + VAT_RATE) * 100) / 100,
+          baseUrl: appBaseUrl,
+          successPath: stripeSuccessPath,
+          cancelPath: stripeCancelPath,
+          orderId: orderId  // Passer l'ID de commande pour le webhook
+        })
+      });
+
+      const checkoutData: any = null;
+      try { 
+        Object.assign(checkoutData || {}, await checkoutRes.json()); 
+      } catch (_) { /* no body */ }
+
+      if (!checkoutRes.ok || !checkoutData?.sessionId) {
+        const msg = checkoutData?.error || checkoutData?.details || `Échec API Stripe (${checkoutRes.status})`;
         throw new Error(msg);
       }
+
       const stripe = await loadStripe(stripePublishableKey);
-      await stripe?.redirectToCheckout({ sessionId: data.sessionId });
+      await stripe?.redirectToCheckout({ sessionId: checkoutData.sessionId });
     } catch (e: any) {
       console.error('Stripe error:', e);
       alert(`Erreur Stripe: ${e?.message || 'Veuillez réessayer.'}`);
+      sessionStorage.removeItem('stripe_order_id');
     }
   };
 
@@ -602,41 +647,53 @@ const Home: React.FC = () => {
         });
       },
       onApprove: async (_: unknown, actions: any) => {
+        // Vérifier le poids minimum
+        if (totalWeightKg < 5) {
+          alert(`⚠️ Poids minimum requis : 5 kg\nPoids actuel : ${totalWeightKg.toFixed(2)} kg`);
+          return;
+        }
+
         // Vérifier que les infos de livraison sont remplies
         if (!deliveryData.fullName || !deliveryData.phone || !deliveryData.address || !deliveryData.city || !deliveryData.country) {
           alert('⚠️ Veuillez remplir toutes les informations de livraison avant de valider le paiement.');
           return;
         }
-        await actions.order.capture();
-        
-        // Sauvegarder la commande
+
         try {
-          await fetch('/api/save-order', {
+          // Capturer le paiement PayPal
+          await actions.order.capture();
+
+          // Valider la commande côté serveur (sécurisé)
+          const response = await fetch('/api/validate-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               items: cart.map(i => ({ 
                 name: i.name, 
-                priceEUR: i.price, 
                 quantity: i.quantity 
               })),
-              subtotalHT: subtotalHT,
-              shippingCostHT: shippingHT,
-              taxAmount: totalVAT,
-              totalAmount: totalTTC,
-              amountEUR: totalTTC,
-              currency: 'EUR',
               deliveryInfo: deliveryData,
-              paymentMethod: 'paypal',
-              timestamp: new Date().toISOString()
+              deliveryMethod: deliveryMethod,
+              paymentMethod: 'paypal'
             })
           });
+
+          const result = await response.json();
+          
+          if (response.ok && result.success) {
+            const orderId = result.orderId;
+            alert(`✅ Paiement confirmé !\n\nNuméro de commande : ${orderId}`);
+            clearCart();
+            setIsCartOpen(false);
+            setChatMessages(prev => [...prev, { role: 'assistant', content: `Paiement PayPal confirmé. Commande ${orderId} créée avec succès ! 🎉` }]);
+          } else {
+            console.error('Erreur validation commande:', result);
+            alert('⚠️ Paiement confirmé mais erreur lors de la sauvegarde. Nous vous contacterons.');
+          }
         } catch (error) {
-          console.error('Erreur sauvegarde commande:', error);
+          console.error('Erreur PayPal:', error);
+          alert('⚠️ Erreur lors du traitement du paiement. Veuillez réessayer.');
         }
-        
-        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Paiement PayPal confirmé. Merci pour votre commande !' }]);
-        setIsCartOpen(false);
       },
       onError: () => setPaypalStatus('error')
     }).render(paypalContainerRef.current);
