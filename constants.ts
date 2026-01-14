@@ -3,77 +3,50 @@ import { Product, Testimonial } from './types';
 
 // Pricing configuration
 export const FCFA_PER_EUR = 655;
-export const MARKUP_FACTOR = 3.0; // Markup to achieve 2€ from 1.5€ current price
+export const MARKUP_FACTOR = 1.0; // Prix réels sans markup
 export const VAT_RATE = 0.20; // 20%
 
-export const RAW_DATA = `MATIERES PREMIERES,PRIX LITRE/KILOS
-Huile de neem pressée à froid,6750 FCFA
-Huile d’avocat extra vierge,12000 FCFA
-Beurre de Karité brut,3600 FCFA
-Huile de ricin pressée à froid,15750 FCFA
-Huile de palmiste brute,1800 FCFA
-Huile de coco pressée à froid,5700 FCFA
-Huile de tournesol extra vierge,6000 FCFA
-Huile de baobab pressée à froid,9750 FCFA
-Huile de soja extra vierge,3300 FCFA
-Poudre de baobab tamisée en vrac,5250 FCFA
-Huile de nigelle pressée à froid,18000 FCFA
-Huile d’hibiscus pure,18750 FCFA
-Huile de carotte pure,13200 FCFA
-Huile de fenugrec pressée à froid,17700 FCFA
-Huile d’Akpi pressée à froid,20250 FCFA
-Poudre de moringa naturelle,10500 FCFA
-Poudre de neem naturelle,6750 FCFA
-Huile de moringa pressée à froid,49500 FCFA
-Huile de sésame pressée à froid,11250 FCFA
-Aklui de Sorgho - 600g,2751 FCFA
-Farine de maÏs - 1kg,1493 FCFA
-Farine de telibor (Cosette d'igname) - 1kg,3537 FCFA
-Aklui de Maïs - 600g,2456 FCFA
-Aklui de Mil - 600g,3000 FCFA
-Farine de Agbeli - 600g,2941 FCFA
-Farine de riz (ABLO) - 500g,2941 FCFA
-Farine de Féchouada - 300g,4493 FCFA
-Farine de Côme - 800g,2941 FCFA
-Farine de Mawê Maïs - 600g,2941 FCFA
-Farine de AKASSA - 600g,2941 FCFA
-Farine de ATA GBAZA - 300g,2941 FCFA
-Farine de Adowê - 300g,2941 FCFA
-Farine de Mawê Sorgho - 600g,4493 FCFA
-Tagliatelle au manioc,1801 FCFA
-Piment rouge de table - 500g,2063 FCFA
-Kluiklui – Galette d'arachide croustillante - 300g,1035 FCFA
-Huile rouge - 500ml,1231 FCFA
-Pomme de terre - 1kg,1769 FCFA
-Igname frais - 1kg,3373 FCFA
-Carte-cadeau,9825 FCFA
-Noix d'acajou - 1kg,7074 FCFA
-Ognon - 1kg,2037 FCFA
-Ail - 1 sachet,740 FCFA
-Graine de chia,1801 FCFA
-Piment vert de table - 500g,1349 FCFA
-Infusion verveine menthe - 25 sachets,2692 FCFA
-Lanhouiwin - 100g,2063 FCFA
-Purée de tomate Yon-na - 1Kg,2456 FCFA
-Infusion digestion légère - 20 sachets,2692 FCFA
-Sel de mer fin iodé - La baleine - 125g,1801 FCFA
-Persil séché,1474 FCFA
-Persillade Assaisonnement,1474 FCFA
-Piment noir de Kom - 600g,9039 FCFA
-Piment noir de Kom - 300g,4127 FCFA
-Poudre de cannelle,1801 FCFA
-Poivre blanc bio moulu,1801 FCFA
-Poivre noir bio moulu,1801 FCFA
-Graine d'anis vert,1801 FCFA
-Gingembre en poudre bio,3000 FCFA
-Monodara myristica - Épices,3000 FCFA
-Purée de tomate Yon-na - 500g,2253 FCFA
-Thym séché,1179 FCFA
-Poudre de piment vert CUISTOS - 100g,3747 FCFA
-Poudre de piment CUISTOS - 100g,3000 FCFA
-Tomate en poudre - 125g,4493 FCFA
-Poudre de piment vert - 125g,5247 FCFA
-Poudre de piment rouge - 125g,4493 FCFA`;
+export const RAW_DATA = `MATIERES PREMIERES,PRIX
+Huile de ricin - 1L,13100 FCFA
+Huile d'avocat - 1L,16375 FCFA
+Huile de neem - 1L,9825 FCFA
+Huile de palmiste - 1L,5823 FCFA
+Huile de coco - 1L,7860 FCFA
+Huile de tournesol - 1L,8450 FCFA
+Huile de baobab - 1L,16375 FCFA
+Huile de soja - 1L,6550 FCFA
+Huile de nigelle - 1L,24235 FCFA
+Huile d'hibiscus - 1L,27510 FCFA
+Huile de carotte - 1L,19650 FCFA
+Huile de fenugrec - 1L,26128 FCFA
+Huile d'Akpi - 1L,30130 FCFA
+Huile de moringa - 1L,65500 FCFA
+Huile de sésame - 1L,15065 FCFA
+Beurre de Karité - 1kg,6550 FCFA
+Poudre de baobab - 1kg,9825 FCFA
+Poudre de moringa - 1kg,16375 FCFA
+Poudre de neem - 1kg,13100 FCFA
+Huile rouge - 1L,3275 FCFA
+Igname frais - 1kg,4991 FCFA
+Patate douce - 1kg,3275 FCFA
+Noix d'acajou - 1kg,10480 FCFA
+Aklui de Sorgho - 1kg,3275 FCFA
+Farine de maïs - 1kg,1310 FCFA
+Farine de telibor (Cosette d'igname) - 1kg,2358 FCFA
+Aklui de Maïs - 1kg,2731 FCFA
+Aklui de Mil - 1kg,3275 FCFA
+Farine de Agbeli - 1kg,3275 FCFA
+Farine de riz (ABLO) - 1kg,3917 FCFA
+Farine de Féchouada - 1kg,9976 FCFA
+Farine de Côme - 1kg,2456 FCFA
+Farine de Mawê Maïs - 1kg,3275 FCFA
+Farine de AKASSA - 1kg,3275 FCFA
+Farine de ATA GBAZA - 1kg,6550 FCFA
+Farine de Adowê - 1kg,6550 FCFA
+Farine de Mawê Sorgho - 1kg,5024 FCFA
+Piment rouge de table - 1kg,1795 FCFA
+Poisson séché - 1kg,9825 FCFA
+Crevette séchée - 1kg,16375 FCFA`;
 
 // Serve images from /public/products (absolute path for dev/preview)
 const PRODUCTS_BASE = '/products';
@@ -104,11 +77,6 @@ const IMAGE_POOLS = {
     'photo-1574323347407-f5e1ad6d020b',
     'photo-1601526714465-bdd38c2b83ff'
   ],
-  Conserve: [
-    'photo-1599598938194-c9d8c20b1a89',
-    'photo-1619566636858-adf3ef46400b',
-    'photo-1573855619003-97b4799dcd8b'
-  ],
   Céréale: [
     'photo-1586201375761-83865001e31c',
     'photo-1518977676601-b53f82aba655',
@@ -121,69 +89,52 @@ const IMAGE_POOLS = {
     'photo-1506368249639-73a05d6f6488',
     'photo-1587411768390-609139b54d5e',
     'photo-1596040008853-f1b5b4b0b1b7'
+  ],
+  Poisson: [
+    'photo-1534604973900-c43ab4c2e0ab',
+    'photo-1504973960431-1c467e159aa4',
+    'photo-1559737558-2f5a35ab38c1'
   ]
 };
 
 // Local product visuals (prefer local over Unsplash for key items)
 const LOCAL_IMAGES: Record<string, string> = {
-  'huile-de-neem-pressee-a-froid': 'huile-de-neem.jpg',
-  'huile-d-avocat-extra-vierge': 'huile-d-avocat.jpg',
-  'beurre-de-karite-brut': 'beurre-de-karite.jpg',
-  'huile-de-ricin-pressee-a-froid': 'huile-de-ricin.jpg',
-  'huile-de-palmiste-brute': 'huile-de-palmiste.jpg',
-  'huile-de-coco-pressee-a-froid': 'huile-de-coco.jpg',
-  'huile-de-tournesol-extra-vierge': 'huile-de-tournesol.jpg',
-  'huile-de-baobab-pressee-a-froid': 'huile-de-baobab.jpg',
-  'huile-de-soja-extra-vierge': 'huile-de-soja.jpg',
-  'huile-de-nigelle-pressee-a-froid': 'huile-de-nigelle.jpg',
-  'huile-d-hibiscus-pure': 'huile-d-hibiscuit.jpg',
-  'huile-de-carotte-pure': 'huile-de-carotte.jpg',
-  'huile-de-fenugrec-pressee-a-froid': 'huile-de-fenugrec.jpg',
-  'huile-d-akpi-pressee-a-froid': 'huile-d-akpi.jpg',
-  'poudre-de-moringa-naturelle': 'poudre-de-moringa.jpg',
-  'poudre-de-neem-naturelle': 'poudre-de-neem.jpg',
-  'huile-de-moringa-pressee-a-froid': 'huile-de-moringa.jpg',
-  'huile-de-sesame-pressee-a-froid': 'huile-de-sesame.jpg',
-  'poudre-de-baobab-tamisee-en-vrac': 'poudre-de-baobab.jpg',
-  'huile-rouge-500ml': 'huile-rouge.jpg',
+  'huile-de-neem-1l': 'huile-de-neem.jpg',
+  'huile-d-avocat-1l': 'huile-d-avocat.jpg',
+  'beurre-de-karite-1kg': 'beurre-de-karite.jpg',
+  'huile-de-ricin-1l': 'huile-de-ricin.jpg',
+  'huile-de-palmiste-1l': 'huile-de-palmiste.jpg',
+  'huile-de-coco-1l': 'huile-de-coco.jpg',
+  'huile-de-tournesol-1l': 'huile-de-tournesol.jpg',
+  'huile-de-baobab-1l': 'huile-de-baobab.jpg',
+  'huile-de-soja-1l': 'huile-de-soja.jpg',
+  'huile-de-nigelle-1l': 'huile-de-nigelle.jpg',
+  'huile-d-hibiscus-1l': 'huile-d-hibiscuit.jpg',
+  'huile-de-carotte-1l': 'huile-de-carotte.jpg',
+  'huile-de-fenugrec-1l': 'huile-de-fenugrec.jpg',
+  'huile-d-akpi-1l': 'huile-d-akpi.jpg',
+  'poudre-de-moringa-1kg': 'poudre-de-moringa.jpg',
+  'poudre-de-neem-1kg': 'poudre-de-neem.jpg',
+  'huile-de-moringa-1l': 'huile-de-moringa.jpg',
+  'huile-de-sesame-1l': 'huile-de-sesame.jpg',
+  'poudre-de-baobab-1kg': 'poudre-de-baobab.jpg',
+  'huile-rouge-1l': 'huile-rouge.jpg',
   'igname-frais-1kg': 'igname-frais.jpg',
-  'kluiklui-galette-d-arachide-croustillante-300g': 'klui-klui.jpg',
   'noix-d-acajou-1kg': 'noix-d-acajou.jpg',
-  'pomme-de-terre-1kg': 'pomme-de-terre.jpg',
-  'aklui-de-sorgho-600g': 'aklui-de-sorgho.jpg',
+  'patate-douce-1kg': 'pomme-de-terre.jpg',
+  'aklui-de-sorgho-1kg': 'aklui-de-sorgho.jpg',
   'farine-de-mais-1kg': 'farine-de-mais.jpg',
   'farine-de-telibor-cosette-d-igname-1kg': 'farine-de-telibo.jpg',
-  'aklui-de-mais-600g': 'aklui-de-mais.jpg',
-  'aklui-de-mil-600g': 'aklui-de-mil.jpg',
-  'farine-de-agbeli-600g': 'farine-de-agbeli.jpg',
-  'farine-de-riz-ablo-500g': 'farine-de-riz.jpg',
-  'farine-de-mawe-mais-600g': 'farine-de-mawe.jpg',
-  'farine-de-akassa-600g': 'farine-de-akassa.jpg',
-  'farine-de-ata-gbaza-300g': 'farine-de-ata-gbaza.jpg',
-  'farine-de-adowe-300g': 'farine-de-adowe.jpg',
-  'farine-de-mawe-sorgho-600g': 'farine-de-mawe-sorgho.jpg',
-  'tagliatelle-au-manioc': 'tigatelle-au-manioc.jpg',
-  'piment-rouge-de-table-500g': 'piment-rouge-de-table.jpg',
-  'ognon-1kg': 'oignon.jpg',
-  'ail-1-sachet': 'ail.jpg',
-  'graine-de-chia': 'graine-de-chia.jpg',
-  'piment-vert-de-table-500g': 'piment-vert-de-table.jpg',
-  'lanhouiwin-100g': 'lanhouihouin.jpg',
-  'puree-de-tomate-yon-na-1kg': 'puree-de-tomate.jpg',
-  'sel-de-mer-fin-iode-la-baleine-125g': 'sel-de-mer-fin-iodee.jpg',
-  'persil-seche': 'persil-seche.jpg',
-  'piment-noir-de-kom-600g': 'piment-noir-come.jpg',
-  'poudre-de-cannelle': 'poudre-de-carnelle.jpg',
-  'poivre-blanc-bio-moulu': 'poivre-blanc-moulu.jpg',
-  'poivre-noir-bio-moulu': 'poivre-noir-moulu.jpg',
-  'graine-d-anis-vert': 'graine-d-anis-vert.jpg',
-  'gingembre-en-poudre-bio': 'gimgembre-en-poudre.jpg',
-  'monodara-myristica-epices': 'monodora-myristica-epices.jpg',
-  'puree-de-tomate-yon-na-500g': 'puree-de-tomate (2).jpg',
-  'thym-seche': 'teem-seche.jpg',
-  'poudre-de-piment-rouge-125g': 'poudre-de-piment-rouge.jpg',
-  'poudre-de-piment-vert-125g': 'poudre-de-piment-vert.jpg',
-  'tomate-en-poudre-125g': 'poudre-de-tomate.jpg'
+  'aklui-de-mais-1kg': 'aklui-de-mais.jpg',
+  'aklui-de-mil-1kg': 'aklui-de-mil.jpg',
+  'farine-de-agbeli-1kg': 'farine-de-agbeli.jpg',
+  'farine-de-riz-ablo-1kg': 'farine-de-riz.jpg',
+  'farine-de-mawe-mais-1kg': 'farine-de-mawe.jpg',
+  'farine-de-akassa-1kg': 'farine-de-akassa.jpg',
+  'farine-de-ata-gbaza-1kg': 'farine-de-ata-gbaza.jpg',
+  'farine-de-adowe-1kg': 'farine-de-adowe.jpg',
+  'farine-de-mawe-sorgho-1kg': 'farine-de-mawe-sorgho.jpg',
+  'piment-rouge-de-table-1kg': 'piment-rouge-de-table.jpg'
 };
 
 const slugify = (value: string): string =>
@@ -200,28 +151,24 @@ export const parseCSVData = (csv: string): Product[] => {
     const [name, priceStr] = line.split(',');
     const basePriceFCFA = parseInt(priceStr.replace(/[^0-9]/g, ''));
     
-    let category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice' = 'Huile';
+    let category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice' | 'Poisson' = 'Huile';
     let unit: 'litre' | 'kilo' | 'g' | 'ml' | 'sachet' | 'unité' = 'kilo';
 
     const nameLower = name.toLowerCase();
     
     // Catégorisation intelligente
-    if (nameLower.includes('farine') || nameLower.includes('aklui') || nameLower.includes('tagliatelle')) {
+    if (nameLower.includes('farine') || nameLower.includes('aklui')) {
       category = 'Farine';
       unit = 'kilo';
-    } else if (nameLower.includes('kluiklui') || nameLower.includes('conserve') || (nameLower.includes('huile rouge') && nameLower.includes('500ml'))) {
-      category = 'Conserve';
-      unit = 'unité';
-    } else if (nameLower.includes('pomme de terre') || nameLower.includes('igname') || nameLower.includes('carte-cadeau') || nameLower.includes('noix')) {
+    } else if (nameLower.includes('poisson') || nameLower.includes('crevette')) {
+      category = 'Poisson';
+      unit = 'kilo';
+    } else if (nameLower.includes('patate') || nameLower.includes('igname') || nameLower.includes('noix')) {
       category = 'Céréale';
-      unit = nameLower.includes('kg') ? 'kilo' : 'unité';
-    } else if (nameLower.includes('piment') || nameLower.includes('ognon') || nameLower.includes('ail') || nameLower.includes('graine') || nameLower.includes('infusion') || nameLower.includes('lanhouiwin') || nameLower.includes('purée') || nameLower.includes('sel') || nameLower.includes('persil') || nameLower.includes('poivre') || nameLower.includes('cannelle') || nameLower.includes('gingembre') || nameLower.includes('monodara') || nameLower.includes('thym') || nameLower.includes('tomate en poudre')) {
+      unit = 'kilo';
+    } else if (nameLower.includes('piment')) {
       category = 'Épice';
-      if (nameLower.includes('sachet')) unit = 'sachet';
-      else if (nameLower.includes('kg')) unit = 'kilo';
-      else if (nameLower.includes('ml')) unit = 'ml';
-      else if (nameLower.includes('g')) unit = 'g';
-      else unit = 'unité';
+      unit = 'kilo';
     } else if (nameLower.includes('poudre')) {
       category = 'Poudre';
       unit = 'kilo';
@@ -239,7 +186,7 @@ export const parseCSVData = (csv: string): Product[] => {
     const slug = slugify(name);
     const localImage = LOCAL_IMAGES[slug];
 
-    // Compute EUR price with double 50% markup and VAT included
+    // Compute EUR price with markup and VAT included
     const priceFCFAWithMarkup = Math.round(basePriceFCFA * MARKUP_FACTOR);
     const priceEURHT = priceFCFAWithMarkup / FCFA_PER_EUR;
     const priceEURTTC = Math.round(priceEURHT * (1 + VAT_RATE) * 100) / 100; // 2 decimals
