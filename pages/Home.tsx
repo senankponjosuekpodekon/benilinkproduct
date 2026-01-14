@@ -1084,7 +1084,7 @@ const Home: React.FC = () => {
         </div>
         <div className="mb-12 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-            {(['Tous', 'Huile', 'Beurre', 'Poudre', 'Farine', 'Conserve', 'Céréale', 'Épice'] as CategoryFilter[]).map(cat => (
+            {(['Tous', 'Huile', 'Beurre', 'Poudre', 'Farine', 'Céréale', 'Épice', 'Poisson'] as CategoryFilter[]).map(cat => (
               <CategoryTab 
                 key={cat} 
                 label={cat} 

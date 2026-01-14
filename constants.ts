@@ -151,7 +151,7 @@ export const parseCSVData = (csv: string): Product[] => {
     const [name, priceStr] = line.split(',');
     const basePriceFCFA = parseInt(priceStr.replace(/[^0-9]/g, ''));
     
-    let category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Conserve' | 'Céréale' | 'Épice' | 'Poisson' = 'Huile';
+    let category: 'Huile' | 'Beurre' | 'Poudre' | 'Farine' | 'Céréale' | 'Épice' | 'Poisson' = 'Huile';
     let unit: 'litre' | 'kilo' | 'g' | 'ml' | 'sachet' | 'unité' = 'kilo';
 
     const nameLower = name.toLowerCase();
