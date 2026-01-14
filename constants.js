@@ -44,7 +44,28 @@ const LOCAL_IMAGES = {
   'farine-de-ata-gbaza-300g': 'farine-de-ata-gbaza.jpg',
   'farine-de-adowe-300g': 'farine-de-adowe.jpg',
   'farine-de-mawe-sorgho-600g': 'farine-de-mawe-sorgho.jpg',
-  'tagliatelle-au-manioc': 'tigatelle-au-manioc.jpg'
+  'tagliatelle-au-manioc': 'tigatelle-au-manioc.jpg',
+  'piment-rouge-de-table-500g': 'piment-rouge-de-table.jpg',
+  'ognon-1kg': 'oignon.jpg',
+  'ail-1-sachet': 'ail.jpg',
+  'graine-de-chia': 'graine-de-chia.jpg',
+  'piment-vert-de-table-500g': 'piment-vert-de-table.jpg',
+  'lanhouiwin-100g': 'lanhouihouin.jpg',
+  'puree-de-tomate-yon-na-1kg': 'puree-de-tomate.jpg',
+  'sel-de-mer-fin-iode-la-baleine-125g': 'sel-de-mer-fin-iodee.jpg',
+  'persil-seche': 'persil-seche.jpg',
+  'piment-noir-de-kom-600g': 'piment-noir-come.jpg',
+  'poudre-de-cannelle': 'poudre-de-carnelle.jpg',
+  'poivre-blanc-bio-moulu': 'poivre-blanc-moulu.jpg',
+  'poivre-noir-bio-moulu': 'poivre-noir-moulu.jpg',
+  'graine-d-anis-vert': 'graine-d-anis-vert.jpg',
+  'gingembre-en-poudre-bio': 'gimgembre-en-poudre.jpg',
+  'monodara-myristica-epices': 'monodora-myristica-epices.jpg',
+  'puree-de-tomate-yon-na-500g': 'puree-de-tomate (2).jpg',
+  'thym-seche': 'teem-seche.jpg',
+  'poudre-de-piment-rouge-125g': 'poudre-de-piment-rouge.jpg',
+  'poudre-de-piment-vert-125g': 'poudre-de-piment-vert.jpg',
+  'tomate-en-poudre-125g': 'poudre-de-tomate.jpg'
 };
 
 // Fallback Unsplash images (same as constants.ts)
