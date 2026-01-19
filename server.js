@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 
 // API Handlers
+import createStripeSessionHandler from './api/index.js';
 import validateOrderHandler from './api/validate-order.js';
 import ordersAdminHandler from './api/orders-admin.js';
 import stripeWebhookHandler from './api/stripe-webhook.js';
@@ -26,6 +27,7 @@ const apiLimiter = rateLimit({
 app.use('/api', apiLimiter);
 
 // ✅ API Routes
+app.post('/api', createStripeSessionHandler);
 app.post('/api/validate-order', validateOrderHandler);
 app.get('/api/orders-admin', ordersAdminHandler);
 app.post('/api/stripe-webhook', stripeWebhookHandler);

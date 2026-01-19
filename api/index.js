@@ -30,7 +30,10 @@ export default async function handler(req, res) {
   try {
     const { items, currency = 'EUR', shippingCostEUR } = req.body || {};
     
+    console.log('📦 Stripe API received:', { items, shippingCostEUR, currency });
+    
     if (!Array.isArray(items) || items.length === 0) {
+      console.error('❌ No items provided:', { items });
       return res.status(400).json({ error: 'No items provided' });
     }
 
@@ -74,9 +77,10 @@ export default async function handler(req, res) {
       cancel_url: cancelUrl
     });
 
+    console.log('✅ Stripe session created:', session.id);
     res.status(200).json({ sessionId: session.id });
   } catch (err) {
-    console.error('Stripe error:', err);
+    console.error('❌ Stripe error:', err);
     const message = err && typeof err === 'object' && 'message' in err ? err.message : String(err);
     res.status(500).json({ error: 'Stripe checkout failed', details: message });
   }

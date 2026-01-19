@@ -545,9 +545,9 @@ const Home: React.FC = () => {
         })
       });
 
-      const checkoutData: any = null;
+      let checkoutData: any = null;
       try { 
-        Object.assign(checkoutData || {}, await checkoutRes.json()); 
+        checkoutData = await checkoutRes.json();
       } catch (_) { /* no body */ }
 
       if (!checkoutRes.ok || !checkoutData?.sessionId) {
@@ -1455,7 +1455,7 @@ const Home: React.FC = () => {
                 <div className="flex gap-2">
                   <button onClick={() => setPaymentMethod('whatsapp')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'whatsapp' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>WhatsApp</button>
                   <button onClick={() => setPaymentMethod('paypal')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'paypal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>PayPal</button>
-                  <button onClick={() => setPaymentMethod('stripe')} className={`px-4 py-2 rounded-xl text-sm font-black border ${paymentMethod === 'stripe' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200'}`}>Stripe</button>
+                  {/* Stripe désactivé - button masqué */}
                 </div>
                 {paymentMethod === 'whatsapp' ? (
                   <button 
@@ -1475,6 +1475,8 @@ const Home: React.FC = () => {
                     {paypalStatus === 'loading' && <p className="text-sm text-slate-500">Chargement des boutons PayPal...</p>}
                     {paypalStatus === 'error' && <p className="text-sm text-red-500">PayPal indisponible. Vérifiez PAYPAL_CLIENT_ID ou réessayez.</p>}
                   </div>
+                ) : null
+                /* Stripe désactivé
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-slate-500 font-bold">
@@ -1486,7 +1488,7 @@ const Home: React.FC = () => {
                     </button>
                     {!stripePublishableKey && <p className="text-sm text-red-500">Stripe indisponible. Ajoutez STRIPE_PUBLISHABLE_KEY.</p>}
                   </div>
-                )}
+                */}
               </div>
             )}
           </div>
